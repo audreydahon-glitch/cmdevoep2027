@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tableau des Commandes VO · Plaque EP</title>
+<meta name="theme-color" content="#0e1a2b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1a2b'/%3E%3Cpath d='M22 16h-3a4 4 0 0 0-4 4v28a4 4 0 0 0 4 4h26a4 4 0 0 0 4-4V20a4 4 0 0 0-4-4h-3M24 12h16v8H24zM24 32h16M24 40h10' stroke='%23fff' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f3f5f8;--panel:#fff;--ink:#0e1a2b;--ink2:#2b3a52;--muted:#6a7588;--line:#e2e7ee;--line2:#eef1f5;
+  --accent:#0b5cff;--accent-soft:#e8f0ff;--accent-ink:#0a3fb0;--slate:#4a6481;
+  --pos:#0c8a4f;--pos-soft:#e4f5ec;--neg:#d0302a;--neg-soft:#fdecea;--warn:#b97700;--warn-soft:#fff4dc;
+  --f-ui:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--f-d:'Archivo',var(--f-ui);
+  --r:10px;--shadow:0 1px 2px rgba(14,26,43,.06),0 4px 14px rgba(14,26,43,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.5px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body{font-feature-settings:"tnum" 1}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.wrap{width:1600px;margin:0 auto;padding:18px 24px 60px}
+body.narrow .wrap{width:auto;padding:12px}
+
+/* En-tête */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:42px;height:42px;border-radius:11px;background:var(--ink);display:grid;place-items:center}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.brand h1{font-family:var(--f-d);font-weight:800;font-size:26px;margin:0;letter-spacing:-.01em;font-stretch:88%}
+.user{display:flex;align-items:center;gap:14px;font-size:13px}
+.user .nm{font-weight:600}.user .rl{color:var(--muted)}
+.lnk{background:none;border:0;padding:0;color:var(--accent);font-weight:500}
+.lnk:hover{text-decoration:underline}
+
+/* Barre des parcs */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:var(--shadow);margin-bottom:14px}
+.sites{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 2px 0 8px}
+.grp:first-child{margin-left:0}
+.sep{width:1px;height:24px;background:var(--line);margin:0 6px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #d5dce6;background:#fff;border-radius:99px;padding:6px 14px;font-weight:600;font-size:13px;color:var(--ink2)}
+.chip:hover{border-color:#b9c4d4}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.tot::before{content:"◆";font-size:10px}
+.period{display:flex;gap:8px;align-items:center}
+.sel,.inp{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:32px}
+.sel:focus,.inp:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+
+/* Onglets */
+.tabs{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--line);align-items:flex-end}
+.tab{background:none;border:0;padding:10px 14px 11px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-size:15px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab .b{font-size:12px;color:var(--muted);font-weight:500;margin-left:6px}
+.tabs .grow{flex:1}
+
+/* Tuiles de présentation */
+.ptitle{display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 12px}
+.ptitle h2{font-family:var(--f-d);font-weight:800;font-size:24px;margin:0;font-stretch:90%}
+.ptitle .sub{color:var(--muted);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:16px}
+body.narrow .tiles{grid-template-columns:repeat(2,1fr)}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden;min-height:132px}
+.tile .l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
+.tile .v{font-family:var(--f-d);font-weight:800;font-size:38px;letter-spacing:-.01em;margin-top:6px;font-stretch:90%;line-height:1.1;color:var(--ink2)}
+.tile .s{font-size:13px;color:var(--muted);margin-top:4px}
+.tile.dark{background:var(--slate);border-color:var(--slate)}
+.tile.dark .l{color:#dce3ec}.tile.dark .v{color:#fff}.tile.dark .s{color:#dce3ec}
+.tile.ac::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.tile.ac .v{color:var(--c)}
+.tile .bar2{height:5px;border-radius:99px;background:var(--line2);margin-top:9px;overflow:hidden}
+.tile.dark .bar2{background:rgba(255,255,255,.2)}
+.tile .bar2 i{display:block;height:100%;border-radius:99px;background:var(--pos)}
+.tile .bar2 i.ko{background:#e5a23a}
+.ribbon{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}
+body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
+.rb{border-top:2px solid var(--ink2);padding:10px 2px 2px;font-size:15px;color:var(--ink2)}
+.rb b{font-family:var(--f-d);font-size:24px;font-weight:800;margin-right:6px;color:var(--ink);font-stretch:92%}
+.rb.alert b{color:var(--neg)}
+
+/* Cartes */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card+.card{margin-top:14px}
+.chead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.chead h3{font-family:var(--f-d);font-size:17px;font-weight:800;margin:0;font-stretch:92%}
+.chead .sub{color:var(--muted);font-size:12.5px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:7px 13px;font-weight:600;min-height:32px}
+.btn:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+.btn.ghost{background:#fff;color:var(--ink2);border-color:var(--line)}
+.btn.ghost:hover{border-color:#c0cad8;background:#fafbfc}
+.btn.danger{background:#fff;color:var(--neg);border-color:#f3c3c0}
+.btn:disabled{opacity:.5;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 12px;font-weight:600;color:var(--muted);font-size:13px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+.note{font-size:12.5px;color:var(--muted)}
+.pad{padding:14px}
+
+/* Tableau des commandes façon Excel */
+.xw{overflow:auto;max-height:calc(100vh - 250px);background:#fff;border-top:1px solid var(--line)}
+table.xl{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:12px}
+table.xl th,table.xl td{border:1px solid #c8c8c8;padding:3px 6px;white-space:nowrap;text-align:center}
+table.xl thead th{position:sticky;z-index:2;font-size:9.5px;font-weight:400;line-height:1.15;white-space:normal;vertical-align:bottom;padding:4px 3px}
+table.xl thead tr.g th{top:0;height:20px;background:#fff;border:0}
+table.xl thead tr.g th.acc{border:1px solid #000;font-size:10px;background:#fff}
+table.xl thead tr.h th{top:20px;height:52px}
+table.xl tbody tr{cursor:pointer}
+table.xl tbody tr:hover td{background:#eaf1ff}
+table.xl td.l{text-align:left}
+table.xl td.r{text-align:right}
+table.xl tr.annul td{color:#9aa3b2;text-decoration:line-through}
+table.xl tr.annul td.u{text-decoration:none;color:#fff;background:#ff0000}
+table.xl td.neg{color:#c00000}
+table.xl td.st{color:#c00000;font-weight:700}
+table.xl tfoot td{position:sticky;bottom:0;background:#f3f5f8;font-weight:700}
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:#fbfcfd}
+.filters .inp{width:220px}
+.cnt{color:var(--muted);font-size:12.5px;margin-left:auto}
+
+/* Récap */
+table.mx{border-collapse:separate;border-spacing:0;width:100%}
+.mx td,.mx th{padding:8px 9px;border-bottom:1px solid var(--line2);white-space:nowrap;text-align:right;font-size:13px}
+.mx th{background:#f8f9fb;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}
+.mx th.lab,.mx td.lab{text-align:left;font-weight:600;min-width:190px}
+.mx tr.sub td{font-weight:800;background:#f3f6fb;border-top:1px solid var(--line)}
+.mx tr.obj td{color:var(--muted);background:#fffaf0}
+.mx tr.ec td{font-weight:700}
+.mx tr.na td{color:var(--neg)}
+.mx td.tt,.mx th.tt{border-left:1px solid var(--line);font-weight:800;background:#f6f8fb}
+.mx tr.sub td.tt{background:#e9eef6}
+.mx th.pair{border-left:1px solid var(--line)}
+.mx td.fi{color:var(--muted)}
+.mx td.z{color:#c3cad6}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.secs{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between}
+
+/* Paramètres */
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.pg textarea{width:100%;min-height:220px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:inherit}
+.og td,.og th{padding:4px 6px}
+.og input{width:100%;text-align:right;border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+.og input:disabled{background:#f8f9fb;border-color:transparent}
+
+/* Panneau latéral */
+.drawer{position:fixed;inset:0;background:rgba(14,26,43,.32);z-index:50;display:flex;justify-content:flex-end}
+.dbox{width:680px;max-width:100%;height:100%;background:var(--panel);display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(14,26,43,.15)}
+.dhead{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dhead h3{margin:2px 0 0;font-family:var(--f-d);font-size:22px;font-weight:800;font-stretch:90%}
+.dbox form{display:flex;flex-direction:column;height:100%;min-height:0}
+.dbody{flex:1;min-height:0;overflow:auto;padding:6px 20px 20px}
+.dfoot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;background:#fafbfc}
+.dfoot .grow{flex:1}
+.fs{margin-top:14px}
+.fs h4{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.fs h4 i{display:inline-block;width:10px;height:10px;border-radius:3px}
+.fg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 12px}
+.fg .w2{grid-column:span 2}.fg .w3{grid-column:span 3}
+.f label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;font-weight:500}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;min-height:34px}
+.f textarea{min-height:64px;resize:vertical}
+.toggles{display:flex;flex-wrap:wrap;gap:6px}
+.tg{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-weight:600;font-size:12.5px;color:var(--muted)}
+.tg[aria-pressed="true"]{background:var(--accent-soft);border-color:#b9cdfb;color:var(--accent-ink)}
+.tg.red[aria-pressed="true"]{background:var(--neg-soft);border-color:#f3c3c0;color:var(--neg)}
+.meta{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.6}
+.dmsg{font-size:12.5px;color:var(--neg)}
+
+/* Historique / admin */
+.lg td{white-space:normal;vertical-align:top;text-align:left}
+.ad{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
+.chk{display:flex;flex-wrap:wrap;gap:6px 14px}
+.chk label{display:flex;gap:6px;align-items:center;font-size:12.5px;white-space:nowrap}
+.creds{margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fbfcfd}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.ok{color:var(--pos)}.ko{color:var(--neg)}
+table.lt{border-collapse:collapse;width:100%}
+.lt td,.lt th{padding:8px 10px;border-bottom:1px solid var(--line2);text-align:left;font-size:13px}
+.lt th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:#f8f9fb}
+.rtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--line2);color:var(--ink2)}
+.rtag.aucun{background:var(--neg-soft);color:var(--neg)}
+.rtag.admin{background:var(--ink);color:#fff}
+
+/* Connexion */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.lcard{width:100%;max-width:390px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:30px 26px;box-shadow:var(--shadow)}
+.lcard h1{font-family:var(--f-d);font-weight:800;font-size:28px;margin:8px 0 4px;font-stretch:88%}
+.lcard p{color:var(--muted);margin:0 0 18px;font-size:13px}
+.lcard label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+.lcard input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:15px}
+.lcard .btn{width:100%;margin-top:18px;padding:10px;font-size:15px}
+.lmsg{min-height:20px;margin-top:12px;font-size:13px;color:var(--neg)}
+.modal{position:fixed;inset:0;background:rgba(14,26,43,.32);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+.pbox{background:#fff;border-radius:12px;padding:22px;width:100%;max-width:380px}
+.pbox h3{margin:0 0 10px;font-family:var(--f-d);font-size:20px}
+.pbox label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.pbox input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.row2{display:flex;gap:12px;align-items:center;margin-top:16px}
+.flash{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:80;font-weight:500;box-shadow:var(--shadow)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--pos-soft);color:var(--pos)}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pos)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+// ====================================================================
+//  Paramètres généraux
+// ====================================================================
+const DOMAIN = 'vo.plaque-ep.fr';
+const GROUPS = ['MB', 'FMC / NSA', 'GVA'];
+const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MOIS_C = ['JANV.','FÉVR.','MARS','AVRIL','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
+const ROLE_LBL = {admin:'Administrateur', directeur:'Directeur', chef:'Chef des ventes', assistante:'Assistante commerciale', aucun:'Aucun accès'};
+// Colonnes du classeur, dans le même ordre et avec les mêmes couleurs d'en-tête
+const COLS = [
+  ['date_cde','DATE CDE','date','#F4B183'],['marque','MARQUE','text','#F4B183'],['modele','MODELE','text','#F4B183'],
+  ['immat',"N° D'IMMAT",'text','#F4B183'],['client','CLIENT','text','#F4B183'],['vendeur','VENDEUR','vend','#F8CBAD'],
+  ['cession','CESSION','text','#F8CBAD'],['repreneur','REPRENEUR','text','#F8CBAD'],['prix_vente_ht','PRIX DE VENTE HT','eur','#FFE699'],
+  ['jours_stock','NBRE JOUR STOCK','int','#FFC000'],['marge_prev','MARGE HT PREVISIONNELLE','eur','#C9C9C9'],
+  ['marge_vendeur','MARGE HT VENDEUR','eur','#C9C9C9'],['marge_reelle','MARGE REELLE HT','eur','#4472C4','#fff'],
+  ['remise_ttc','REMISE TTC','eur','#8497B0','#fff'],['frais_admin','FRAIS ADMIN','bool','#C6E0B4'],['eurodatacar','EURODATACAR','bool','#C6E0B4'],
+  ['pack_liv','PACK LIV 990','bool','#C6E0B4'],['coyote','COYOTE','bool','#ED7D31'],['protech','PROTECH','bool','#ED7D31'],
+  ['bulbbee','BULBBEE','bool','#ED7D31'],['annulation','ANNULATION','bool','#FF0000','#fff'],['date_fact','DATE DE FACTURE','date','#8EA9DB'],
+  ['garantie','GARANTIE','gar','#70AD47'],['fi','FI','bool','#8EA9DB'],['ca_fin','CA FINANCEMENT','eur','#8EA9DB'],
+  ['assurance','ASSURANCE','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],
+  ['reprise','REPRISE','bool','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
+];
+const COLW = {date_cde:72,marque:70,modele:90,immat:80,client:170,vendeur:82,cession:40,repreneur:80,prix_vente_ht:80,jours_stock:34,
+  marge_prev:78,marge_vendeur:66,marge_reelle:66,remise_ttc:58,frais_admin:36,eurodatacar:30,pack_liv:34,coyote:36,protech:56,bulbbee:38,
+  annulation:30,date_fact:70,garantie:80,fi:30,ca_fin:72,assurance:30,organisme:80,loa:30,reprise:34,commentaires:220};
+// Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
+const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
+const BOOLS = COLS.filter(c => c[2] === 'bool').map(c => c[0]);
+const NUMS = COLS.filter(c => c[2] === 'eur' || c[2] === 'int').map(c => c[0]);
+
+// ====================================================================
+//  État
+// ====================================================================
+const S = {
+  sb: null, session: null, me: null,
+  sites: [], params: {}, obj: {}, rows: [], names: {},
+  sel: null,            // {t:'site', s:'mb-villeneuve'} | {t:'grp', g:'MB'} | {t:'all'}
+  tab: 'recap', year: new Date().getFullYear(), month: new Date().getMonth() + 1,
+  recapSec: 'cde', totSec: 'cde',
+  f: {q: '', vend: '', mois: '', vue: 'toutes'},
+  live: false,
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf0 = new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 0});
+const N = v => (v == null || v === '' || isNaN(v)) ? 0 : Number(v);
+const fN = v => v ? nf0.format(Math.round(v)) : '-';
+const fE = v => v ? nf0.format(Math.round(v)) + ' €' : '-';
+const fP = v => (v == null || !isFinite(v)) ? '-' : Math.round(v * 100) + ' %';
+const fD = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(2, 4) : '';
+const ym = d => d ? [Number(d.slice(0, 4)), Number(d.slice(5, 7))] : [0, 0];
+function flash(t) { const d = document.createElement('div'); d.className = 'flash'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+
+// Même présentation quelle que soit la taille de l'écran (projection sur grand écran)
+function fit() {
+  const w = window.innerWidth;
+  if (w < 900) { document.body.classList.add('narrow'); document.body.style.zoom = ''; return; }
+  document.body.classList.remove('narrow');
+  document.body.style.zoom = (w / 1600).toFixed(4);
+}
+window.addEventListener('resize', fit);
+
+// ====================================================================
+//  Démarrage et connexion
+// ====================================================================
+async function boot() {
+  fit();
+  try {
+    const cfg = await (await fetch('/api/config', {cache: 'no-store'})).json();
+    if (cfg.error) throw new Error(cfg.error);
+    S.sb = supabase.createClient(cfg.url, cfg.anon);
+  } catch (e) {
+    $('#app').innerHTML = '<div class="login"><div class="lcard"><h1>Configuration</h1><p class="ko">' + esc(e.message || e) + '</p></div></div>';
+    return;
+  }
+  const { data } = await S.sb.auth.getSession();
+  if (data && data.session) { S.session = data.session; await start(); } else loginView();
+}
+
+function loginView(msg) {
+  $('#app').innerHTML = `<div class="login"><form class="lcard" id="lf">
+    <div class="eyebrow">Plaque EP · Service VO</div><h1>Tableau des Commandes</h1>
+    <p>Connectez-vous avec votre identifiant habituel (le même que Prospection Atelier).</p>
+    <label>Identifiant</label><input id="li" autocomplete="username" placeholder="prenom.nom" required>
+    <label>Mot de passe</label><input id="lp" type="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">Se connecter</button><div class="lmsg" id="lm">${esc(msg || '')}</div></form></div>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault();
+    const id = $('#li').value.trim().toLowerCase();
+    const email = id.includes('@') ? id : id + '@' + DOMAIN;
+    $('#lm').textContent = 'Connexion…';
+    const { data, error } = await S.sb.auth.signInWithPassword({ email, password: $('#lp').value });
+    if (error) { $('#lm').textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+    S.session = data.session; await start();
+  };
+}
+
+async function logout() { await S.sb.auth.signOut(); location.reload(); }
+
+async function start() {
+  $('#app').innerHTML = '<div class="empty" style="padding-top:120px"><b>Chargement…</b></div>';
+  const { data: me, error } = await S.sb.rpc('tc_me');
+  if (error) { loginView('Erreur : ' + error.message); return; }
+  S.me = me;
+  if (!me || me.role === 'aucun') {
+    $('#app').innerHTML = `<div class="login"><div class="lcard"><div class="eyebrow">Plaque EP · Service VO</div><h1>Accès non autorisé</h1>
+      <p>Votre compte n'a pas accès au Tableau des Commandes. Rapprochez-vous de votre administrateur.</p>
+      <button class="btn ghost" onclick="logout()">Se déconnecter</button></div></div>`;
+    return;
+  }
+  await loadAll();
+  const mine = S.sites.filter(s => (S.me.sites || []).includes(s.slug));
+  S.sel = mine.length ? {t: 'site', s: mine[0].slug} : {t: 'all'};
+  S.tab = me.role === 'assistante' ? 'cmd' : 'recap';
+  render();
+  subscribe();
+}
+
+async function loadAll() {
+  const sb = S.sb;
+  const [si, pa, ob, pr] = await Promise.all([
+    sb.from('tc_sites').select('*').order('ordre'),
+    sb.from('tc_params').select('*'),
+    sb.from('tc_objectifs').select('*'),
+    sb.from('profiles').select('id,nom'),
+  ]);
+  S.sites = (si.data || []).filter(s => S.me.role === 'admin' || (S.me.sites || []).includes(s.slug));
+  S.params = {}; (pa.data || []).forEach(p => S.params[p.site] = p);
+  S.obj = {}; (ob.data || []).forEach(o => S.obj[o.site + '|' + o.annee + '|' + o.mois] = o);
+  S.names = {}; (pr.data || []).forEach(p => S.names[p.id] = p.nom);
+  const rows = []; let from = 0;
+  for (;;) {
+    const { data, error } = await sb.from('tc_commandes').select('*').order('date_cde', {ascending: false}).range(from, from + 999);
+    if (error) { flash('Erreur de chargement : ' + error.message); break; }
+    rows.push(...data); if (data.length < 1000) break; from += 1000;
+  }
+  S.rows = rows;
+}
+
+let rtTimer = null;
+function subscribe() {
+  try {
+    S.sb.channel('tc').on('postgres_changes', {event: '*', schema: 'public', table: 'tc_commandes'}, p => {
+      if (p.eventType === 'DELETE') S.rows = S.rows.filter(r => r.id !== (p.old && p.old.id));
+      else {
+        const i = S.rows.findIndex(r => r.id === p.new.id);
+        if (i >= 0) S.rows[i] = p.new; else S.rows.unshift(p.new);
+      }
+      clearTimeout(rtTimer); rtTimer = setTimeout(() => { if (!$('.drawer') && !$('.modal')) renderMain(); }, 400);
+    }).subscribe(st => { S.live = st === 'SUBSCRIBED'; const l = $('#live'); if (l) l.hidden = !S.live; });
+  } catch (e) { /* le temps réel est un plus : sans lui l'outil fonctionne */ }
+}
+
+// ====================================================================
+//  Droits côté écran (la base les vérifie aussi)
+// ====================================================================
+const canEdit = site => S.me.role === 'admin' || (['directeur','chef','assistante'].includes(S.me.role) && S.me.sites.includes(site));
+const canParam = site => S.me.role === 'admin' || (['directeur','chef'].includes(S.me.role) && S.me.sites.includes(site));
+const siteObj = slug => S.sites.find(s => s.slug === slug) || {slug, label: slug, grp: ''};
+function selSites() {
+  if (!S.sel) return [];
+  if (S.sel.t === 'site') return [S.sel.s];
+  if (S.sel.t === 'grp') return S.sites.filter(s => s.grp === S.sel.g).map(s => s.slug);
+  return S.sites.map(s => s.slug);
+}
+function selLabel() {
+  if (S.sel.t === 'site') return siteObj(S.sel.s).label;
+  if (S.sel.t === 'grp') return 'Total ' + S.sel.g;
+  return S.me.role === 'admin' ? 'Plaque EP' : 'Total mes parcs';
+}
+
+// ====================================================================
+//  Rendu général
+// ====================================================================
+function render() {
+  const me = S.me;
+  const groups = GROUPS.map(g => ({g, sites: S.sites.filter(s => s.grp === g)})).filter(x => x.sites.length);
+  const pressed = c => c ? 'aria-pressed="true"' : 'aria-pressed="false"';
+  let chips = '';
+  groups.forEach((x, i) => {
+    if (i) chips += '<span class="sep"></span>';
+    chips += `<span class="grp">${esc(x.g)}</span>`;
+    x.sites.forEach(s => chips += `<button class="chip" ${pressed(S.sel.t === 'site' && S.sel.s === s.slug)} onclick="pick('site','${s.slug}')">${esc(s.label)}</button>`);
+    if (x.sites.length > 1) chips += `<button class="chip tot" ${pressed(S.sel.t === 'grp' && S.sel.g === x.g)} onclick="pick('grp','${x.g}')">Total ${esc(x.g)}</button>`;
+  });
+  if (groups.length > 1) chips += `<span class="sep"></span><button class="chip tot" ${pressed(S.sel.t === 'all')} onclick="pick('all')">${me.role === 'admin' ? 'Plaque EP' : 'Total mes parcs'}</button>`;
+  const years = []; const y0 = new Date().getFullYear();
+  for (let y = y0 + 1; y >= 2025; y--) years.push(y);
+  $('#app').innerHTML = `<div class="wrap">
+    <div class="top"><div class="brand"><div class="logo"><svg width="22" height="22" viewBox="0 0 64 64"><path d="M22 16h-3a4 4 0 0 0-4 4v28a4 4 0 0 0 4 4h26a4 4 0 0 0 4-4V20a4 4 0 0 0-4-4h-3M24 12h16v8H24zM24 32h16M24 40h10" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg></div>
+      <div><div class="eyebrow">Plaque EP · Service VO</div><h1>Tableau des Commandes</h1></div></div>
+      <div class="user"><span class="live" id="live" ${S.live ? '' : 'hidden'}>En direct</span>
+        <span><span class="nm">${esc(me.nom || me.identifiant)}</span> · <span class="rl">${esc(ROLE_LBL[me.role] || me.role)}</span></span>
+        ${me.role === 'admin' ? `<button class="lnk" onclick="go('admin')">Administration</button>` : ''}
+        <button class="lnk" onclick="pwdModal()">Mot de passe</button><button class="lnk" onclick="logout()">Déconnexion</button></div></div>
+    <div class="bar"><div class="sites">${chips}</div>
+      <div class="period"><select class="sel" id="yr" onchange="S.year=+this.value;renderMain()">${years.map(y => `<option ${y === S.year ? 'selected' : ''}>${y}</option>`).join('')}</select>
+      <select class="sel" id="mo" onchange="S.month=+this.value;renderMain()">${MOIS.map((m, i) => `<option value="${i + 1}" ${i + 1 === S.month ? 'selected' : ''}>${m}</option>`).join('')}</select></div></div>
+    <div id="main"></div></div>`;
+  renderMain();
+}
+function pick(t, v) { S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; render(); }
+function go(t) { S.tab = t; renderMain(); }
+
+function renderMain() {
+  const m = $('#main'); if (!m) return;
+  const site = S.sel.t === 'site' ? S.sel.s : null;
+  const tabs = [['recap', 'Récap']];
+  if (site) {
+    const n = S.rows.filter(r => r.site === site && ym(r.date_cde)[0] === S.year).length;
+    tabs.push(['cmd', `Commandes VO <span class="b">${n}</span>`]);
+    tabs.push(['param', 'Vendeurs & objectifs']);
+    tabs.push(['hist', 'Historique']);
+  }
+  if (S.me.role === 'admin') tabs.push(['admin', 'Administration']);
+  if (!tabs.some(t => t[0] === S.tab)) S.tab = 'recap';
+  let h = `<div class="tabs">${tabs.map(t => `<button class="tab" aria-selected="${S.tab === t[0]}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}<span class="grow"></span></div>`;
+  h += '<div id="body"></div>';
+  m.innerHTML = h;
+  const b = $('#body');
+  if (S.tab === 'recap') b.innerHTML = site ? recapSite(site) : recapTotal();
+  else if (S.tab === 'cmd') b.innerHTML = cmdView(site);
+  else if (S.tab === 'param') b.innerHTML = paramView(site);
+  else if (S.tab === 'hist') { b.innerHTML = '<div class="card"><div class="empty">Chargement…</div></div>'; histView(site); }
+  else if (S.tab === 'admin') { b.innerHTML = '<div class="card"><div class="empty">Chargement…</div></div>'; adminView(); }
+}
+
+// ====================================================================
+//  Calculs (mêmes règles que le classeur Excel)
+//  Commandes : date de commande · Livraisons, marge, financement, garanties, accessoires : date de facture
+//  Une commande annulée est exclue de tous les calculs.
+// ====================================================================
+function stats(sites, year) {
+  const z = () => Array(13).fill(0);
+  const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(),
+    v: {}, org: {}, gar: {}, sites};
+  const vl = sites.length === 1 ? ((S.params[sites[0]] || {}).vendeurs || []) : [];
+  const vk = name => { const k = (name || '').trim().toUpperCase(); return vl.includes(k) ? k : '__NA'; };
+  const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z()});
+  for (const r of S.rows) {
+    if (!sites.includes(r.site) || r.annulation) continue;
+    const [yc, mc] = ym(r.date_cde), [yf, mf] = ym(r.date_fact);
+    const k = vk(r.vendeur), hv = HORS_VOL.includes((r.vendeur || '').trim().toUpperCase());
+    if (yc === year && mc) { if (!hv) out.cde[mc]++; V(k).cde[mc]++; }
+    if (yf === year && mf) {
+      const v = V(k);
+      if (!hv) out.liv[mf]++; v.liv[mf]++;
+      if (r.fi) { if (!hv) out.fi[mf]++; v.fi[mf]++; }
+      out.marge[mf] += N(r.marge_reelle); v.marge[mf] += N(r.marge_reelle);
+      out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
+      if (r.coyote) { out.coy[mf]++; v.coy[mf]++; }
+      if (r.protech) { out.pro[mf]++; v.pro[mf]++; }
+      if (r.bulbbee) { out.bul[mf]++; v.bul[mf]++; }
+      if ((r.marque || '').trim().toUpperCase() === 'AM') { out.am[mf]++; v.am[mf]++; }
+      const o = (r.organisme || '').trim().toUpperCase(); if (N(r.ca_fin)) { (out.org[o] || (out.org[o] = z()))[mf] += N(r.ca_fin); }
+      const g = (r.garantie || '').trim().toUpperCase(); (out.gar[g] || (out.gar[g] = z()))[mf]++;
+    }
+  }
+  const sum = a => a.slice(1).reduce((x, y) => x + y, 0);
+  for (const k of ['cde','liv','fi','marge','caf','coy','pro','bul','am']) out[k][0] = sum(out[k]);
+  Object.values(out.v).forEach(v => Object.keys(v).forEach(k => v[k][0] = sum(v[k])));
+  Object.values(out.org).forEach(a => a[0] = sum(a)); Object.values(out.gar).forEach(a => a[0] = sum(a));
+  // Objectifs
+  out.oc = z(); out.ol = z(); out.om = z();
+  for (const s of sites) for (let m = 1; m <= 12; m++) {
+    const o = S.obj[s + '|' + year + '|' + m]; if (!o) continue;
+    out.oc[m] += N(o.cde); out.ol[m] += N(o.liv); out.om[m] += N(o.marge);
+  }
+  ['oc','ol','om'].forEach(k => out[k][0] = sum(out[k]));
+  out.vl = vl;
+  return out;
+}
+
+// ---------- Tuiles + bandeau du mois ----------
+function tilesHtml(st) {
+  const m = S.month;
+  const pct = (a, b) => b ? a / b : null;
+  const bar = p => p == null ? '' : `<div class="bar2"><i class="${p >= 1 ? '' : 'ko'}" style="width:${Math.min(100, Math.round(p * 100))}%"></i></div>`;
+  const objTxt = (a, b, f) => b ? `objectif ${f(b)} · ${fP(a / b)}` : 'objectif non saisi';
+  const tf = pct(st.fi[0], st.liv[0]);
+  const acc = st.coy[0] + st.pro[0] + st.bul[0];
+  const T = [
+    ['dark', 'Commandes', fN(st.cde[0]) , objTxt(st.cde[0], st.oc[0], fN), bar(pct(st.cde[0], st.oc[0]))],
+    ['', 'VO livrés', fN(st.liv[0]), objTxt(st.liv[0], st.ol[0], fN), bar(pct(st.liv[0], st.ol[0]))],
+    ['ac" style="--c:#2e7d4f', 'Taux FI', fP(tf), `${nf0.format(st.fi[0])} financements`, ''],
+    ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[0]), objTxt(st.marge[0], st.om[0], fE), bar(pct(st.marge[0], st.om[0]))],
+    ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[0] ? fE(st.marge[0] / st.liv[0]) : '-', `sur ${nf0.format(st.liv[0])} VO livrés`, ''],
+    ['ac" style="--c:#b7791f', 'Accessoires', fN(acc), `Coyote ${st.coy[0]} · Protech ${st.pro[0]} · Bulbbee ${st.bul[0]}`, ''],
+  ];
+  const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
+  const R = [
+    [fN(st.cde[m]), `commandes en ${MOIS[m - 1].toLowerCase()}`],
+    [fN(st.liv[m]), `VO livrés en ${MOIS[m - 1].toLowerCase()}`],
+    [fE(st.marge[m]), 'de marge sur le mois'],
+    [fP(pct(st.fi[m], st.liv[m])), 'taux FI du mois'],
+    [fE(st.caf[m]), 'CA financement du mois'],
+  ];
+  if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
+  else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
+  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>
+    <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
+}
+
+// ---------- Récap d'un parc ----------
+function recapSite(site) {
+  const st = stats([site], S.year);
+  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Autres marques']];
+  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>`;
+  return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec='${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
+    <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div><div style="overflow:auto">${recapTable(st, S.recapSec)}</div></div>`;
+}
+
+function vendRows(st) { return [...st.vl, ...(st.v.__NA ? ['__NA'] : [])]; }
+const isHV = k => HORS_VOL.includes(k);
+// Codes de sites de Prospection Atelier → parcs du Tableau des Commandes
+const LEGACY = {'mb-cannet': 'mb-cannes', 'mb-le-cannet': 'mb-cannes', 'parc-nice': 'fmc-nice', 'nsa-nice': 'fmc-nice', 'parc-cannes': 'nsa-cannes', 'fmc-cannes': 'nsa-cannes', 'gva-audi-toulon': 'audi', 'gva-vw-toulon': 'vw-toulon', 'gva-ollioules': 'vw-ollioules', 'gva-six-fours': 'six-fours'};
+const mapSites = s => [...new Set((s || '').split(',').map(x => x.trim()).filter(Boolean).map(x => LEGACY[x] || x))];
+function mrow(label, arr, f, cls) {
+  return `<tr class="${cls || ''}"><td class="lab">${label}</td>${arr.slice(1).map(v => `<td class="${v ? '' : 'z'}">${f(v)}</td>`).join('')}<td class="tt">${f(arr[0])}</td></tr>`;
+}
+function hdr(title, last) { return `<tr><th class="lab">${title}</th>${MOIS_C.map(m => `<th>${m}</th>`).join('')}<th class="tt">${last || 'TOTAL'}</th></tr>`; }
+function objRows(tot, obj, f) {
+  const z = Array(13).fill(0);
+  const ec = tot.map((v, i) => obj[i] ? v - obj[i] : null), pc = tot.map((v, i) => obj[i] ? v / obj[i] : null);
+  return mrow('Objectif', obj, f, 'obj') +
+    `<tr class="ec"><td class="lab">Écart</td>${ec.slice(1).map(v => `<td class="${v == null ? 'z' : v < 0 ? 'neg' : 'pos'}">${v == null ? '-' : (v > 0 ? '+' : '') + f(v || 0.0001).replace('-', '−')}</td>`).join('')}<td class="tt ${ec[0] == null ? '' : ec[0] < 0 ? 'neg' : 'pos'}">${ec[0] == null ? '-' : (ec[0] > 0 ? '+' : '') + f(ec[0] || 0.0001)}</td></tr>` +
+    `<tr class="ec"><td class="lab">% réalisation</td>${pc.slice(1).map(v => `<td class="${v == null ? 'z' : v < 1 ? 'neg' : 'pos'}">${fP(v)}</td>`).join('')}<td class="tt">${fP(pc[0])}</td></tr>`;
+}
+function vlab(k) { return k === '__NA' ? 'Non affecté' : esc(k); }
+function recapTable(st, sec) {
+  const V = vendRows(st), g = (k, f, only) => V.filter(v => only == null || isHV(v) === only).map(v => mrow(vlab(v) + (only === true ? ' <span class="note">· hors total</span>' : ''), (st.v[v] || {})[k] || Array(13).fill(0), f, v === '__NA' ? 'na' : only === true ? 'obj' : '')).join('');
+  if (sec === 'cde') return `<table class="mx">${hdr('Commandes (date cde)')}${g('cde', fN, false)}${mrow('Total', st.cde, fN, 'sub')}${objRows(st.cde, st.oc, fN)}${g('cde', fN, true)}</table>`;
+  if (sec === 'marge') {
+    const moy = st.marge.map((v, i) => st.liv[i] ? v / st.liv[i] : 0);
+    return `<table class="mx">${hdr('Marge réelle HT (date facture)', 'CUMUL')}${g('marge', fE)}${mrow('Total', st.marge, fE, 'sub')}${objRows(st.marge, st.om, fE)}${mrow('Marge moy. / VO livré', moy, fE, 'ec')}</table>`;
+  }
+  if (sec === 'liv') {
+    let h = `<table class="mx"><tr><th class="lab" rowspan="2">Livraisons (date facture)</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="3" class="tt" style="text-align:center">TOTAL</th></tr>
+      <tr>${MOIS_C.map(() => '<th class="pair">LIV</th><th>FI</th>').join('')}<th class="tt">LIV</th><th>FI</th><th>TAUX FI</th></tr>`;
+    const row = (lab, liv, fi, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${liv.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi">${fN(fi[i + 1])}</td>`).join('')}<td class="tt">${fN(liv[0])}</td><td class="tt">${fN(fi[0])}</td><td class="tt">${liv[0] ? fP(fi[0] / liv[0]) : '-'}</td></tr>`;
+    V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; h += row(vlab(v), x.liv || Array(13).fill(0), x.fi || Array(13).fill(0), v === '__NA' ? 'na' : ''); });
+    h += row('Total', st.liv, st.fi, 'sub');
+    V.filter(isHV).forEach(v => { const x = st.v[v] || {}; h += row(vlab(v) + ' <span class="note">· hors total</span>', x.liv || Array(13).fill(0), x.fi || Array(13).fill(0), 'obj'); });
+    h += `<tr class="obj"><td class="lab">Objectif livraisons</td>${st.ol.slice(1).map(v => `<td colspan="2" style="text-align:center">${fN(v)}</td>`).join('')}<td class="tt">${fN(st.ol[0])}</td><td class="tt"></td><td class="tt"></td></tr>`;
+    h += `<tr class="ec"><td class="lab">Taux FI</td>${st.liv.slice(1).map((v, i) => `<td colspan="2" style="text-align:center">${v ? fP(st.fi[i + 1] / v) : '-'}</td>`).join('')}<td class="tt"></td><td class="tt"></td><td class="tt">${st.liv[0] ? fP(st.fi[0] / st.liv[0]) : '-'}</td></tr>`;
+    return h + '</table>';
+  }
+  if (sec === 'fin') {
+    const orgs = [...new Set([...((S.params[st.sites[0]] || {}).organismes || []), ...Object.keys(st.org)])].filter(Boolean);
+    return `<table class="mx">${hdr('CA financement par organisme')}${orgs.map(o => mrow(esc(o), st.org[o] || Array(13).fill(0), fE)).join('')}${st.org[''] ? mrow('Organisme non renseigné', st.org[''], fE, 'na') : ''}${mrow('Total', st.caf, fE, 'sub')}
+      ${hdr('CA financement par vendeur')}${g('caf', fE)}${mrow('Total', st.caf, fE, 'sub')}</table>`;
+  }
+  if (sec === 'gar') {
+    const gars = [...new Set([...((S.params[st.sites[0]] || {}).garanties || []), ...Object.keys(st.gar)])].filter(Boolean);
+    return `<table class="mx">${hdr('Garanties (date facture)')}${gars.map(x => mrow(esc(x), st.gar[x] || Array(13).fill(0), fN)).join('')}${mrow('Sans garantie', st.gar[''] || Array(13).fill(0), fN)}${mrow('Total livré', st.liv, fN, 'sub')}</table>`;
+  }
+  if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbbee')}${g('bul', fN)}${mrow('Total Bulbbee', st.bul, fN, 'sub')}</table>`;
+  if (sec === 'am') return `<table class="mx">${hdr('Ventes autres marques (AM)')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
+  return '';
+}
+
+// ---------- Récap concession / Plaque ----------
+function recapTotal() {
+  const sites = selSites();
+  const st = stats(sites, S.year);
+  const per = sites.map(s => [s, stats([s], S.year)]);
+  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA financement'],['tfi','Taux FI']];
+  const K = S.totSec;
+  const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : x[K][m];
+  const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
+  let t = `<table class="mx">${hdr(secs.find(s => s[0] === K)[1])}`;
+  per.forEach(([s, x]) => t += `<tr><td class="lab"><button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button></td>${[...Array(12)].map((_, i) => { const v = val(x, i + 1); return `<td class="${v ? '' : 'z'}">${f(v)}</td>`; }).join('')}<td class="tt">${f(val(x, 0))}</td></tr>`);
+  t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
+  if (K === 'cde' || K === 'liv' || K === 'marge') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om'}[K]], f);
+  t += '</table>';
+  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>Taux FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>CA financement</th><th>Coyote</th><th>Protech</th><th>Bulbbee</th></tr>`;
+  const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fE(x.caf[0])}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
+  per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
+  syn += sl('Total', st, 'sub') + '</table>';
+  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>` + tilesHtml(st) +
+    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${K === s[0]}" onclick="S.totSec='${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div></div><div style="overflow:auto">${t}</div></div>
+     <div class="card"><div class="chead"><h3>Synthèse annuelle par parc</h3><span class="sub">cumul ${S.year}</span></div><div style="overflow:auto">${syn}</div></div>`;
+}
+
+// ====================================================================
+//  Commandes VO (présentation du classeur)
+// ====================================================================
+function cmdFiltered(site) {
+  const f = S.f, q = f.q.trim().toLowerCase();
+  return S.rows.filter(r => {
+    if (r.site !== site) return false;
+    const yc = ym(r.date_cde)[0], yf = ym(r.date_fact)[0];
+    if (yc !== S.year && yf !== S.year && !(f.vue === 'nonfact' && !r.date_fact)) return false;
+    if (f.vue === 'nonfact' && (r.date_fact || r.annulation)) return false;
+    if (f.vue === 'annul' && !r.annulation) return false;
+    if (f.vue === 'mois' && !(yc === S.year && ym(r.date_cde)[1] === S.month)) return false;
+    if (f.vue === 'fact' && !(yf === S.year && ym(r.date_fact)[1] === S.month)) return false;
+    if (f.vend && (r.vendeur || '').toUpperCase() !== f.vend) return false;
+    if (q && !['immat','client','modele','marque','vendeur','commentaires','repreneur'].some(k => (r[k] || '').toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.date_cde || '').localeCompare(a.date_cde || ''));
+}
+function cmdView(site) {
+  const edit = canEdit(site);
+  const rows = cmdFiltered(site);
+  const vends = [...new Set([...((S.params[site] || {}).vendeurs || []), ...S.rows.filter(r => r.site === site).map(r => (r.vendeur || '').toUpperCase()).filter(Boolean)])];
+  const vues = [['toutes', 'Toutes ' + S.year], ['mois', 'Commandes de ' + MOIS[S.month - 1].toLowerCase()], ['fact', 'Facturées en ' + MOIS[S.month - 1].toLowerCase()], ['nonfact', 'Non facturées'], ['annul', 'Annulées']];
+  const cell = (c, r) => {
+    const [k, , t] = c, v = r[k];
+    if (t === 'bool') return k === 'annulation' ? `<td class="u">${v ? 1 : ''}</td>` : `<td>${v ? 1 : ''}</td>`;
+    if (t === 'date') return `<td>${fD(v)}</td>`;
+    if (t === 'eur') return `<td class="r ${N(v) < 0 ? 'neg' : ''}">${v == null || v === '' ? '' : nf0.format(Math.round(N(v)))}</td>`;
+    if (t === 'int') return `<td class="${N(v) > 180 ? 'st' : ''}">${v == null ? '' : nf0.format(N(v))}</td>`;
+    if (k === 'client' || k === 'commentaires') return `<td class="l">${esc(v)}</td>`;
+    return `<td>${esc(v)}</td>`;
+  };
+  const tot = k => rows.filter(r => !r.annulation).reduce((s, r) => s + N(r[k]), 0);
+  const cnt = k => rows.filter(r => !r.annulation && r[k]).length;
+  const accStart = COLS.findIndex(c => c[0] === 'frais_admin'), accEnd = COLS.findIndex(c => c[0] === 'bulbbee');
+  let g = '<tr class="g">';
+  COLS.forEach((c, i) => { if (i === accStart) g += `<th class="acc" colspan="${accEnd - accStart + 1}">ACCESSOIRES</th>`; else if (i < accStart || i > accEnd) g += '<th></th>'; });
+  g += '</tr>';
+  const h = `<tr class="h">${COLS.map(c => `<th style="background:${c[3]};color:${c[4] || '#000'};min-width:${COLW[c[0]]}px">${c[1]}</th>`).join('')}</tr>`;
+  const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}" onclick="openCmd('${r.id}')">${COLS.map(c => cell(c, r)).join('')}</tr>`).join('');
+  const foot = `<tr>${COLS.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r">${nf0.format(Math.round(tot(k)))}</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
+  return `<div class="card"><div class="chead"><div><h3>Commandes VO · ${esc(siteObj(site).label)}</h3><div class="sub">Même présentation que le classeur · cliquer sur une ligne pour la modifier</div></div>
+      <div class="tools"><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
+    <div class="filters"><div class="seg">${vues.map(v => `<button aria-pressed="${S.f.vue === v[0]}" onclick="S.f.vue='${v[0]}';renderMain()">${v[1]}</button>`).join('')}</div>
+      <select class="sel" onchange="S.f.vend=this.value;renderMain()"><option value="">Tous les vendeurs</option>${vends.map(v => `<option ${S.f.vend === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
+      <input class="inp" id="q" placeholder="Rechercher (immat, client, modèle…)" value="${esc(S.f.q)}" oninput="S.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{renderMain();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)">
+      <span class="cnt">${rows.length} ligne${rows.length > 1 ? 's' : ''}</span></div>
+    ${rows.length ? `<div class="xw"><table class="xl"><thead>${g}${h}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>` : `<div class="empty"><b>Aucune commande</b>${edit ? 'Ajoutez la première avec « + Nouvelle commande ».' : ''}</div>`}</div>`;
+}
+
+// ---------- Fiche commande ----------
+function openCmd(id) {
+  const site = S.sel.s;
+  const r = id ? S.rows.find(x => x.id === id) : {site, date_cde: new Date().toISOString().slice(0, 10)};
+  if (!r) return;
+  const ro = !canEdit(r.site);
+  const p = S.params[r.site] || {};
+  const dl = (name, arr) => `<datalist id="${name}">${(arr || []).map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+  const inp = (k, lab, type, cls, list) => `<div class="f ${cls || ''}"><label>${lab}</label><input name="${k}" type="${type || 'text'}" ${type === 'number' ? 'step="any"' : ''} value="${esc(r[k] == null ? '' : r[k])}" ${list ? `list="${list}"` : ''} ${ro ? 'disabled' : ''}></div>`;
+  const tg = (k, lab, red) => `<button type="button" class="tg ${red ? 'red' : ''}" data-k="${k}" aria-pressed="${!!r[k]}" ${ro ? 'disabled' : ''} onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">${lab}</button>`;
+  const sec = (t, c, inner) => `<div class="fs"><h4><i style="background:${c}"></i>${t}</h4>${inner}</div>`;
+  const d = document.createElement('div'); d.className = 'drawer';
+  d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
+    <div class="dbody">
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${inp('vendeur', 'Vendeur', 'text', '', 'dlv')}${inp('cession', 'Cession')}${inp('repreneur', 'Repreneur')}</div>`)}
+    ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT', 'number')}${inp('jours_stock', 'Nbre jour stock', 'number')}${inp('remise_ttc', 'Remise TTC', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle', 'number')}${inp('marge_vendeur', 'Marge HT vendeur', 'number')}${inp('marge_reelle', 'Marge réelle HT', 'number')}</div>`)}
+    ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('pack_liv', 'Pack liv 990')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbbee')}</div>`)}
+    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('reprise', 'Reprise')}${tg('annulation', 'Annulée', true)}</div>`)}
+    ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
+    ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
+    ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
+    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>`}${id && canParam(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
+  d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); });
+  document.body.appendChild(d);
+  $('#cf').onsubmit = e => { e.preventDefault(); saveCmd(id, r.site); };
+}
+function closeDrawer() { const d = $('.drawer'); if (d) d.remove(); renderMain(); }
+async function saveCmd(id, site) {
+  const f = $('#cf'), o = {site};
+  COLS.forEach(([k, , t]) => {
+    if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); o[k] = b ? b.getAttribute('aria-pressed') === 'true' : false; return; }
+    const el = f.elements[k]; if (!el) return;
+    let v = el.value.trim();
+    if (t === 'eur' || t === 'int') o[k] = v === '' ? null : Number(v.replace(',', '.'));
+    else if (t === 'date') o[k] = v || null;
+    else o[k] = v === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat'].includes(k) ? v.toUpperCase() : v);
+  });
+  $('#dm').textContent = 'Enregistrement…';
+  const q = id ? S.sb.from('tc_commandes').update(o).eq('id', id).select() : S.sb.from('tc_commandes').insert(o).select();
+  const { data, error } = await q;
+  if (error) { $('#dm').textContent = 'Erreur : ' + error.message; return; }
+  const n = data[0], i = S.rows.findIndex(r => r.id === n.id);
+  if (i >= 0) S.rows[i] = n; else S.rows.unshift(n);
+  flash(id ? 'Commande mise à jour' : 'Commande ajoutée'); closeDrawer();
+}
+async function delCmd(id) {
+  if (!confirm('Supprimer définitivement cette commande ?\n(Pour une annulation client, utilisez plutôt « Annulée ».)')) return;
+  const { error } = await S.sb.from('tc_commandes').delete().eq('id', id);
+  if (error) { $('#dm').textContent = 'Erreur : ' + error.message; return; }
+  S.rows = S.rows.filter(r => r.id !== id); flash('Commande supprimée'); closeDrawer();
+}
+
+// ====================================================================
+//  Vendeurs & objectifs
+// ====================================================================
+function paramView(site) {
+  const p = S.params[site] || {}, ed = canParam(site);
+  const ta = (k, v) => `<textarea id="p_${k}" ${ed ? '' : 'disabled'}>${esc((v || []).join('\n'))}</textarea>`;
+  let og = `<table class="mx og"><tr><th class="lab">Objectifs ${S.year}</th>${MOIS_C.map(m => `<th>${m}</th>`).join('')}<th class="tt">TOTAL</th></tr>`;
+  [['cde', 'Commandes'], ['liv', 'Livraisons'], ['marge', 'Marge HT (€)']].forEach(([k, l]) => {
+    let t = 0;
+    og += `<tr><td class="lab">${l}</td>${[...Array(12)].map((_, i) => { const o = S.obj[site + '|' + S.year + '|' + (i + 1)] || {}; t += N(o[k]); return `<td><input data-k="${k}" data-m="${i + 1}" value="${o[k] == null ? '' : o[k]}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${k === 'marge' ? fE(t) : fN(t)}</td></tr>`;
+  });
+  og += '</table>';
+  return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
+    <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
+    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs / canaux</h4>${ta('vendeurs', p.vendeurs)}</div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
+}
+async function saveObj(site) {
+  const by = {};
+  document.querySelectorAll('.og input').forEach(i => { const m = +i.dataset.m; (by[m] || (by[m] = {site, annee: S.year, mois: m}))[i.dataset.k] = i.value.trim() === '' ? null : Number(i.value.replace(/\s/g, '').replace(',', '.')); });
+  const rows = Object.values(by);
+  const { error } = await S.sb.from('tc_objectifs').upsert(rows);
+  if (error) { flash('Erreur : ' + error.message); return; }
+  rows.forEach(r => S.obj[site + '|' + r.annee + '|' + r.mois] = r);
+  flash('Objectifs enregistrés'); renderMain();
+}
+async function saveParams(site) {
+  const L = k => [...new Set($('#p_' + k).value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean))];
+  const o = {vendeurs: L('vendeurs'), organismes: L('organismes'), garanties: L('garanties'), updated_at: new Date().toISOString()};
+  const { error } = await S.sb.from('tc_params').update(o).eq('site', site);
+  if (error) { flash('Erreur : ' + error.message); return; }
+  Object.assign(S.params[site], o); flash('Listes enregistrées'); renderMain();
+}
+
+// ====================================================================
+//  Historique
+// ====================================================================
+async function histView(site) {
+  const { data, error } = await S.sb.from('tc_log').select('*').eq('site', site).order('at', {ascending: false}).limit(300);
+  const b = $('#body'); if (!b || S.tab !== 'hist') return;
+  if (error) { b.innerHTML = `<div class="card"><div class="empty">${esc(error.message)}</div></div>`; return; }
+  const act = {creation: 'Création', modification: 'Modification', suppression: 'Suppression', import: 'Import Excel'};
+  const diff = l => {
+    if (l.action !== 'modification' || !l.avant || !l.apres) return '';
+    return COLS.filter(c => JSON.stringify(l.avant[c[0]]) !== JSON.stringify(l.apres[c[0]])).map(c => `<b>${c[1].toLowerCase()}</b> : <s>${esc(l.avant[c[0]] ?? '—')}</s> → ${esc(l.apres[c[0]] ?? '—')}`).join(' · ');
+  };
+  b.innerHTML = `<div class="card"><div class="chead"><h3>Historique · ${esc(siteObj(site).label)}</h3><span class="sub">300 dernières actions</span></div>
+    ${(data || []).length ? `<table class="lt lg"><tr><th>Date</th><th>Qui</th><th>Action</th><th>Commande</th><th>Détail</th></tr>${data.map(l => `<tr><td>${new Date(l.at).toLocaleString('fr-FR')}</td><td>${esc(S.names[l.user_id] || '—')}</td><td>${act[l.action] || l.action}</td><td>${esc(l.resume || '')}</td><td class="note">${diff(l)}</td></tr>`).join('')}</table>` : '<div class="empty">Aucune action pour le moment.</div>'}</div>`;
+}
+
+// ====================================================================
+//  Administration (comptes, accès, import)
+// ====================================================================
+async function adminView() {
+  const { data, error } = await S.sb.rpc('tc_comptes');
+  const b = $('#body'); if (!b || S.tab !== 'admin') return;
+  if (error) { b.innerHTML = `<div class="card"><div class="empty">${esc(error.message)}</div></div>`; return; }
+  S.comptes = data || [];
+  const all = S.sites;
+  const lbl = s => mapSites(s).map(x => (all.find(y => y.slug === x) || {label: x}).label).join(', ');
+  const withAcc = S.comptes.filter(c => c.role !== 'aucun'), sans = S.comptes.filter(c => c.role === 'aucun');
+  const row = c => `<tr><td><b>${esc(c.nom)}</b><div class="note mono">${esc(c.identifiant)}</div></td><td><span class="rtag ${c.role}">${ROLE_LBL[c.role] || c.role}</span>${c.propre ? '' : '<div class="note">selon Prospection</div>'}</td><td>${c.role === 'admin' ? 'Tous les parcs' : esc(lbl(c.sites))}</td>
+    <td style="white-space:nowrap"><button class="lnk" onclick="editAcc('${c.id}')">Modifier</button> · <button class="lnk" onclick="resetPwd('${c.id}')">Nouveau mot de passe</button></td></tr>`;
+  b.innerHTML = `<div class="ad"><div><div class="card"><div class="chead"><div><h3>Accès à l'outil</h3><div class="sub">${withAcc.length} personnes ont accès · les vendeurs n'ont pas accès</div></div></div>
+      <table class="lt"><tr><th>Personne</th><th>Rôle</th><th>Parcs</th><th></th></tr>${withAcc.map(row).join('')}</table></div>
+      <div class="card"><div class="chead"><div><h3>Comptes sans accès</h3><div class="sub">Comptes Prospection Atelier (vendeurs…) — « Modifier » pour donner un accès</div></div></div>
+      <table class="lt"><tr><th>Personne</th><th>Rôle</th><th>Parcs</th><th></th></tr>${sans.map(row).join('')}</table></div></div>
+    <div><div class="card"><div class="chead"><h3>Créer un compte</h3></div><form class="pad" id="nf">
+      <div class="f"><label>Prénom et nom</label><input name="nom" required placeholder="Sandra MARTIN"></div>
+      <div class="f" style="margin-top:10px"><label>Rôle</label><select name="role"><option value="assistante">Assistante commerciale</option><option value="chef">Chef des ventes</option><option value="directeur">Directeur</option><option value="admin">Administrateur</option></select></div>
+      <div class="f" style="margin-top:10px"><label>Parcs</label><div class="chk">${all.map(s => `<label><input type="checkbox" value="${s.slug}">${esc(s.label)}</label>`).join('')}</div></div>
+      <div class="row2"><button class="btn" type="submit">Créer le compte</button><span class="dmsg" id="nm"></span></div><div id="nc"></div></form></div>
+    <div class="card"><div class="chead"><h3>Importer un classeur Excel</h3></div><div class="pad">
+      <p class="note" style="margin-top:0">Onglet des commandes au format du classeur (colonnes A à AD, en-têtes en ligne 2). Remplace les commandes de l'année choisie pour ce parc.</p>
+      <div class="f"><label>Parc</label><select id="is">${all.map(s => `<option value="${s.slug}">${esc(s.label)}</option>`).join('')}</select></div>
+      <div class="f" style="margin-top:10px"><label>Année</label><input id="iy" type="number" value="${S.year}"></div>
+      <div class="f" style="margin-top:10px"><label>Fichier</label><input id="if" type="file" accept=".xlsx,.xlsm,.xls"></div>
+      <div id="ip" class="note" style="margin-top:10px"></div></div></div></div></div>`;
+  $('#nf').onsubmit = createAcc;
+  $('#if').onchange = previewImport;
+}
+async function api(body) {
+  const { data } = await S.sb.auth.getSession();
+  const res = await fetch('/api/admin', {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + (data.session ? data.session.access_token : '')}, body: JSON.stringify(body)});
+  const j = await res.json().catch(() => ({error: 'Réponse invalide'}));
+  if (!res.ok || j.error) throw new Error(j.error || 'Erreur');
+  return j;
+}
+async function createAcc(e) {
+  e.preventDefault();
+  const f = e.target, sites = [...f.querySelectorAll('.chk input:checked')].map(i => i.value).join(',');
+  $('#nm').textContent = 'Création…';
+  try {
+    const r = await api({action: 'create', nom: f.nom.value, role: f.role.value, sites});
+    $('#nm').textContent = '';
+    $('#nc').innerHTML = `<div class="creds"><b>Compte créé — à transmettre à ${esc(r.nom)}</b><div class="mono" style="margin-top:6px">Adresse : ${esc(location.origin)}<br>Identifiant : ${esc(r.identifiant)}<br>Mot de passe : ${esc(r.password)}</div></div>`;
+    const { data } = await S.sb.rpc('tc_comptes'); S.comptes = data || [];
+    f.nom.value = '';
+  } catch (err) { $('#nm').textContent = err.message; }
+}
+async function resetPwd(id) {
+  const c = S.comptes.find(x => x.id === id);
+  if (!confirm(`Générer un nouveau mot de passe pour ${c.nom} ?\nAttention : c'est aussi son mot de passe Prospection Atelier.`)) return;
+  try { const r = await api({action: 'reset', id}); alert(`Nouveau mot de passe de ${c.nom} (${c.identifiant}) :\n\n${r.password}`); }
+  catch (err) { alert(err.message); }
+}
+function editAcc(id) {
+  const c = S.comptes.find(x => x.id === id);
+  const cur = mapSites(c.sites);
+  const d = document.createElement('div'); d.className = 'modal';
+  d.innerHTML = `<form class="pbox" id="ef" style="max-width:520px"><h3>${esc(c.nom)}</h3><div class="note">${esc(c.identifiant)}</div>
+    <label>Rôle dans le Tableau des Commandes</label><select class="sel" name="role" style="width:100%">${['aucun', 'assistante', 'chef', 'directeur', 'admin'].map(r => `<option value="${r}" ${c.role === r ? 'selected' : ''}>${ROLE_LBL[r]}</option>`).join('')}</select>
+    <label>Parcs</label><div class="chk">${S.sites.map(s => `<label><input type="checkbox" value="${s.slug}" ${cur.includes(s.slug) ? 'checked' : ''}>${esc(s.label)}</label>`).join('')}</div>
+    <p class="note">Ne change rien dans Prospection Atelier.</p>
+    <div class="row2"><button class="btn" type="submit">Enregistrer</button><button type="button" class="btn ghost" onclick="this.closest('.modal').remove()">Annuler</button></div></form>`;
+  document.body.appendChild(d);
+  $('#ef').onsubmit = async e => {
+    e.preventDefault();
+    const role = e.target.role.value, sites = [...e.target.querySelectorAll('.chk input:checked')].map(i => i.value).join(',');
+    const { error } = await S.sb.from('tc_acces').upsert({user_id: id, role, sites, updated_at: new Date().toISOString()});
+    if (error) { alert(error.message); return; }
+    d.remove(); flash('Accès mis à jour'); adminView();
+  };
+}
+
+// ---------- Import Excel ----------
+function xDate(v) {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 864e5)); return d.toISOString().slice(0, 10); }
+  if (v instanceof Date) return new Date(v.getTime() - v.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+  const m = String(v).trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+  if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+  return null;
+}
+function xNum(v) { if (v == null || v === '') return null; if (typeof v === 'number') return v; const n = Number(String(v).replace(/[\s€]/g, '').replace(',', '.')); return isNaN(n) ? null : n; }
+function xBool(v) { if (v == null) return false; const s = String(v).trim().toUpperCase(); return !(s === '' || s === '0' || s === 'NON' || s === 'FALSE'); }
+let IMP = null;
+async function previewImport() {
+  const file = $('#if').files[0]; if (!file) return;
+  const wb = XLSX.read(await file.arrayBuffer(), {cellDates: false});
+  const name = wb.SheetNames.find(n => n.trim().toUpperCase() === 'VO') || wb.SheetNames.find(n => /VO|CDE|COMMANDE/i.test(n)) || wb.SheetNames[0];
+  const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], {header: 1, raw: true, defval: null});
+  const year = +$('#iy').value, rows = [];
+  for (let i = 2; i < aoa.length; i++) {
+    const a = aoa[i]; if (!a) continue;
+    const o = {};
+    COLS.forEach(([k, , t], j) => {
+      const v = a[j];
+      if (t === 'date') o[k] = xDate(v);
+      else if (t === 'eur' || t === 'int') o[k] = xNum(v);
+      else if (t === 'bool') o[k] = xBool(v);
+      else { const t2 = v == null ? '' : String(v).trim(); o[k] = t2 === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat'].includes(k) ? t2.toUpperCase() : t2); }
+    });
+    if (!o.date_cde && !o.date_fact && !o.client && !o.immat) continue;
+    if (ym(o.date_cde)[0] !== year && ym(o.date_fact)[0] !== year) continue;
+    rows.push(o);
+  }
+  const vend = [...new Set(rows.map(r => r.vendeur).filter(Boolean))];
+  IMP = {site: $('#is').value, year, rows};
+  $('#ip').innerHTML = `Onglet « ${esc(name)} » : <b>${rows.length} commandes ${year}</b> trouvées · ${vend.length} vendeurs (${esc(vend.join(', '))}).
+    <div class="row2"><button class="btn" onclick="doImport()">Importer dans ${esc(siteObj(IMP.site).label)}</button></div>`;
+}
+async function doImport() {
+  if (!IMP) return;
+  if (!confirm(`Remplacer les commandes ${IMP.year} de ${siteObj(IMP.site).label} par les ${IMP.rows.length} lignes du fichier ?`)) return;
+  $('#ip').textContent = 'Import en cours…';
+  const { data, error } = await S.sb.rpc('tc_import', {p_site: IMP.site, p_annee: IMP.year, p_rows: IMP.rows});
+  if (error) { $('#ip').textContent = 'Erreur : ' + error.message; return; }
+  const p = S.params[IMP.site];
+  const vs = [...new Set(IMP.rows.map(r => r.vendeur).filter(Boolean))];
+  if (p && !(p.vendeurs || []).length && vs.length) { await S.sb.from('tc_params').update({vendeurs: vs}).eq('site', IMP.site); p.vendeurs = vs; }
+  await loadAll(); flash(data + ' commandes importées'); IMP = null; adminView();
+}
+
+// ---------- Exports Excel ----------
+function exportCmd(site) {
+  const rows = cmdFiltered(site);
+  const aoa = [COLS.map((c, i) => i === 14 ? 'ACCESSOIRES' : null), COLS.map(c => c[1])];
+  rows.forEach(r => aoa.push(COLS.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])));
+  const ws = XLSX.utils.aoa_to_sheet(aoa, {cellDates: true});
+  ws['!cols'] = COLS.map(c => ({wpx: COLW[c[0]] + 10}));
+  ws['!merges'] = [{s: {r: 0, c: 14}, e: {r: 0, c: 19}}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'VO');
+  XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label} ${S.year}.xlsx`);
+}
+function exportRecap() {
+  const site = S.sel.s, st = stats([site], S.year), wb = XLSX.utils.book_new();
+  const H = t => [t, ...MOIS, 'TOTAL'];
+  const add = (name, blocks) => {
+    const aoa = [];
+    blocks.forEach(([t, lines]) => { aoa.push(H(t)); lines.forEach(([l, a]) => aoa.push([l, ...a.slice(1), a[0]])); aoa.push([]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), name);
+  };
+  const V = vendRows(st), vv = k => V.map(v => [v === '__NA' ? 'NON AFFECTÉ' : v, (st.v[v] || {})[k] || Array(13).fill(0)]);
+  add('RECAP', [
+    ['COMMANDES', [...vv('cde'), ['TOTAL', st.cde], ['OBJECTIF', st.oc]]],
+    ['LIVRAISONS', [...vv('liv'), ['TOTAL', st.liv], ['OBJECTIF', st.ol]]],
+    ['FI', [...vv('fi'), ['TOTAL', st.fi]]],
+    ['MARGE', [...vv('marge'), ['TOTAL', st.marge], ['OBJECTIF', st.om]]],
+    ['CA FINANCEMENT', [...Object.entries(st.org).map(([o, a]) => [o || 'NON RENSEIGNÉ', a]), ['TOTAL', st.caf]]],
+    ['COYOTE', [...vv('coy'), ['TOTAL', st.coy]]], ['PROTECH', [...vv('pro'), ['TOTAL', st.pro]]], ['BULBBEE', [...vv('bul'), ['TOTAL', st.bul]]],
+    ['VENTES AM', [...vv('am'), ['TOTAL', st.am]]],
+  ]);
+  XLSX.writeFile(wb, `Recap VO ${siteObj(site).label} ${S.year}.xlsx`);
+}
+
+// ---------- Mot de passe ----------
+function pwdModal() {
+  const d = document.createElement('div'); d.className = 'modal';
+  d.innerHTML = `<form class="pbox" id="pf"><h3>Changer mon mot de passe</h3><p class="note">C'est aussi votre mot de passe Prospection Atelier.</p>
+    <label>Nouveau mot de passe (8 caractères minimum)</label><input type="password" name="p1" minlength="8" required>
+    <label>Confirmer</label><input type="password" name="p2" minlength="8" required>
+    <div class="row2"><button class="btn" type="submit">Enregistrer</button><button type="button" class="btn ghost" onclick="this.closest('.modal').remove()">Annuler</button><span class="dmsg" id="pm"></span></div></form>`;
+  document.body.appendChild(d);
+  $('#pf').onsubmit = async e => {
+    e.preventDefault();
+    if (e.target.p1.value !== e.target.p2.value) { $('#pm').textContent = 'Les deux mots de passe diffèrent'; return; }
+    const { error } = await S.sb.auth.updateUser({password: e.target.p1.value});
+    if (error) { $('#pm').textContent = error.message; return; }
+    d.remove(); flash('Mot de passe modifié');
+  };
+}
+
+boot();
+</script>
+</body>
+</html>
