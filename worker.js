@@ -1,4 +1,4 @@
-mport * as config from './functions/api/config.js';
+import * as config from './functions/api/config.js';
 import * as admin from './functions/api/admin.js';
 
 export default {
