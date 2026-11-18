@@ -117,10 +117,11 @@ body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .pad{padding:14px}
 
 /* Tableau des commandes façon Excel */
-.xw{overflow:auto;max-height:calc(100vh - 250px);background:#fff;border-top:1px solid var(--line)}
-table.xl{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:12px}
-table.xl th,table.xl td{border:1px solid #c8c8c8;padding:3px 6px;white-space:nowrap;text-align:center}
-table.xl thead th{position:sticky;z-index:2;font-size:9.5px;font-weight:400;line-height:1.15;white-space:normal;vertical-align:bottom;padding:4px 3px}
+.xw{overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 250px);background:#fff;border-top:1px solid var(--line)}
+table.xl{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:11px;table-layout:fixed;width:100%}
+table.xl th,table.xl td{border:1px solid #c8c8c8;padding:3px 3px;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis}
+table.xl thead th{overflow-wrap:anywhere;text-overflow:clip}
+table.xl thead th{position:sticky;z-index:2;font-size:8px;font-weight:400;line-height:1.15;white-space:normal;vertical-align:bottom;padding:4px 3px}
 table.xl thead tr.g th{top:0;height:20px;background:#fff;border:0}
 table.xl thead tr.g th.acc{border:1px solid #000;font-size:10px;background:#fff}
 table.xl thead tr.h th{top:20px;height:52px}
@@ -246,9 +247,9 @@ const COLS = [
   ['assurance','ASSURANCE','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],
   ['reprise','REPRISE','bool','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
 ];
-const COLW = {date_cde:72,marque:70,modele:90,immat:80,client:170,vendeur:82,cession:40,repreneur:80,prix_vente_ht:80,jours_stock:34,
-  marge_prev:78,marge_vendeur:66,marge_reelle:66,remise_ttc:58,frais_admin:36,eurodatacar:30,pack_liv:34,coyote:36,protech:56,bulbbee:38,
-  annulation:30,date_fact:70,garantie:80,fi:30,ca_fin:72,assurance:30,organisme:80,loa:30,reprise:34,commentaires:220};
+const HIDE_GRID = ['repreneur'];   // colonnes conservées en base mais retirées de l'affichage
+const GCOLS = () => COLS.filter(c => !HIDE_GRID.includes(c[0]));
+const COLW = {date_cde:54,marque:70,modele:74,immat:66,client:90,vendeur:72,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:40,marge_prev:58,marge_vendeur:52,marge_reelle:52,remise_ttc:44,frais_admin:40,eurodatacar:52,pack_liv:32,coyote:46,protech:52,bulbbee:48,annulation:50,date_fact:54,garantie:66,fi:22,ca_fin:58,assurance:50,organisme:76,loa:26,reprise:46,commentaires:52};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
 const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
 const BOOLS = COLS.filter(c => c[2] === 'bool').map(c => c[0]);
@@ -533,8 +534,8 @@ function tilesHtml(st) {
   if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
   else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
   const liv = st.liv[0];
-  const A = [['Coyote', st.coy[0], '#ED7D31'], ['Frais admin', st.fa[0], '#7aa95c'], ['Bulbbee', st.bul[0], '#d99a14'],
-    ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes autres marques', st.am[0], '#8a6bc9']];
+  const A = [['Frais admin', st.fa[0], '#7aa95c'], ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Coyote', st.coy[0], '#ED7D31'],
+    ['Bulbbee', st.bul[0], '#d99a14'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes AM', st.am[0], '#8a6bc9']];
   const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des ${nf0.format(liv)} VO livrés</div></div>`; }).join('')}</div>`;
   return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
@@ -543,7 +544,7 @@ function tilesHtml(st) {
 // ---------- Récap d'un parc ----------
 function recapSite(site) {
   const st = stats([site], S.year);
-  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Autres marques']];
+  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
   const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>`;
   return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec='${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
     <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div><div style="overflow:auto">${recapTable(st, S.recapSec)}</div></div>`;
@@ -594,7 +595,7 @@ function recapTable(st, sec) {
     return `<table class="mx">${hdr('Garanties (date facture)')}${gars.map(x => mrow(esc(x), st.gar[x] || Array(13).fill(0), fN)).join('')}${mrow('Sans garantie', st.gar[''] || Array(13).fill(0), fN)}${mrow('Total livré', st.liv, fN, 'sub')}</table>`;
   }
   if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbbee')}${g('bul', fN)}${mrow('Total Bulbbee', st.bul, fN, 'sub')}${hdr('Frais admin')}${g('fa', fN)}${mrow('Total Frais admin', st.fa, fN, 'sub')}${hdr('Eurodatacar')}${g('edc', fN)}${mrow('Total Eurodatacar', st.edc, fN, 'sub')}${hdr('Reprises')}${g('rep', fN)}${mrow('Total Reprises', st.rep, fN, 'sub')}</table>`;
-  if (sec === 'am') return `<table class="mx">${hdr('Ventes autres marques (AM)')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
+  if (sec === 'am') return `<table class="mx">${hdr('Ventes AM')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
   return '';
 }
 
@@ -650,25 +651,27 @@ function cmdView(site) {
     if (t === 'date') return `<td>${fD(v)}</td>`;
     if (t === 'eur') return `<td class="r ${N(v) < 0 ? 'neg' : ''}">${v == null || v === '' ? '' : nf0.format(Math.round(N(v)))}</td>`;
     if (t === 'int') return `<td class="${N(v) > 180 ? 'st' : ''}">${v == null ? '' : nf0.format(N(v))}</td>`;
-    if (k === 'client' || k === 'commentaires') return `<td class="l">${esc(v)}</td>`;
-    return `<td>${esc(v)}</td>`;
+    if (k === 'client' || k === 'commentaires') return `<td class="l" title="${esc(v)}">${esc(v)}</td>`;
+    return `<td title="${esc(v)}">${esc(v)}</td>`;
   };
   const tot = k => rows.filter(r => !r.annulation).reduce((s, r) => s + N(r[k]), 0);
   const cnt = k => rows.filter(r => !r.annulation && r[k]).length;
-  const accStart = COLS.findIndex(c => c[0] === 'frais_admin'), accEnd = COLS.findIndex(c => c[0] === 'bulbbee');
+  const GC = GCOLS();
+  const accStart = GC.findIndex(c => c[0] === 'frais_admin'), accEnd = GC.findIndex(c => c[0] === 'bulbbee');
   let g = '<tr class="g">';
-  COLS.forEach((c, i) => { if (i === accStart) g += `<th class="acc" colspan="${accEnd - accStart + 1}">ACCESSOIRES</th>`; else if (i < accStart || i > accEnd) g += '<th></th>'; });
+  GC.forEach((c, i) => { if (i === accStart) g += `<th class="acc" colspan="${accEnd - accStart + 1}">ACCESSOIRES</th>`; else if (i < accStart || i > accEnd) g += '<th></th>'; });
   g += '</tr>';
-  const h = `<tr class="h">${COLS.map(c => `<th style="background:${c[3]};color:${c[4] || '#000'};min-width:${COLW[c[0]]}px">${c[1]}</th>`).join('')}</tr>`;
-  const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}" onclick="openCmd('${r.id}')">${COLS.map(c => cell(c, r)).join('')}</tr>`).join('');
-  const foot = `<tr>${COLS.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r">${nf0.format(Math.round(tot(k)))}</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
+  const h = `<tr class="h">${GC.map(c => `<th style="background:${c[3]};color:${c[4] || '#000'}">${c[1]}</th>`).join('')}</tr>`;
+  const cg = `<colgroup>${GC.map(c => `<col style="width:${COLW[c[0]]}px">`).join('')}</colgroup>`;
+  const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}" onclick="openCmd('${r.id}')">${GC.map(c => cell(c, r)).join('')}</tr>`).join('');
+  const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r">${nf0.format(Math.round(tot(k)))}</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
   return `<div class="card"><div class="chead"><div><h3>Commandes VO · ${esc(siteObj(site).label)}</h3><div class="sub">Même présentation que le classeur · cliquer sur une ligne pour la modifier</div></div>
       <div class="tools"><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
     <div class="filters"><div class="seg">${vues.map(v => `<button aria-pressed="${S.f.vue === v[0]}" onclick="S.f.vue='${v[0]}';renderMain()">${v[1]}</button>`).join('')}</div>
       <select class="sel" onchange="S.f.vend=this.value;renderMain()"><option value="">Tous les vendeurs</option>${vends.map(v => `<option ${S.f.vend === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
       <input class="inp" id="q" placeholder="Rechercher (immat, client, modèle…)" value="${esc(S.f.q)}" oninput="S.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{renderMain();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)">
       <span class="cnt">${rows.length} ligne${rows.length > 1 ? 's' : ''}</span></div>
-    ${rows.length ? `<div class="xw"><table class="xl"><thead>${g}${h}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>` : `<div class="empty"><b>Aucune commande</b>${edit ? 'Ajoutez la première avec « + Nouvelle commande ».' : ''}</div>`}</div>`;
+    ${rows.length ? `<div class="xw"><table class="xl">${cg}<thead>${g}${h}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>` : `<div class="empty"><b>Aucune commande</b>${edit ? 'Ajoutez la première avec « + Nouvelle commande ».' : ''}</div>`}</div>`;
 }
 
 // ---------- Fiche commande ----------
@@ -914,11 +917,12 @@ async function doImport() {
 // ---------- Exports Excel ----------
 function exportCmd(site) {
   const rows = cmdFiltered(site);
-  const aoa = [COLS.map((c, i) => i === 14 ? 'ACCESSOIRES' : null), COLS.map(c => c[1])];
-  rows.forEach(r => aoa.push(COLS.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])));
+  const GC = GCOLS(), ai = GC.findIndex(c => c[0] === 'frais_admin'), aj = GC.findIndex(c => c[0] === 'bulbbee');
+  const aoa = [GC.map((c, i) => i === ai ? 'ACCESSOIRES' : null), GC.map(c => c[1])];
+  rows.forEach(r => aoa.push(GC.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])));
   const ws = XLSX.utils.aoa_to_sheet(aoa, {cellDates: true});
-  ws['!cols'] = COLS.map(c => ({wpx: COLW[c[0]] + 10}));
-  ws['!merges'] = [{s: {r: 0, c: 14}, e: {r: 0, c: 19}}];
+  ws['!cols'] = GC.map(c => ({wpx: COLW[c[0]] + 10}));
+  ws['!merges'] = [{s: {r: 0, c: ai}, e: {r: 0, c: aj}}];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'VO');
   XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label} ${S.year}.xlsx`);
 }
