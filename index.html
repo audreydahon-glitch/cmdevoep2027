@@ -489,7 +489,7 @@ function stats(sites, year) {
       if (!hv) out.liv[mf]++; v.liv[mf]++;
       if (r.fi) { if (!hv) out.fi[mf]++; v.fi[mf]++; }
       out.marge[mf] += N(r.marge_reelle); v.marge[mf] += N(r.marge_reelle);
-      out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
+      if (!hv) out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
       const c = hv ? 0 : 1;   // les ventes hors volume ne comptent pas dans les totaux (comme le classeur)
       if (r.coyote) { out.coy[mf] += c; v.coy[mf]++; }
       if (r.frais_admin) { out.fa[mf] += c; v.fa[mf]++; }
@@ -498,7 +498,7 @@ function stats(sites, year) {
       if (r.protech) { out.pro[mf] += c; v.pro[mf]++; }
       if (r.bulbbee) { out.bul[mf] += c; v.bul[mf]++; }
       if ((r.marque || '').trim().toUpperCase() === 'AM') { out.am[mf] += c; v.am[mf]++; }
-      const o = (r.organisme || '').trim().toUpperCase(); if (N(r.ca_fin)) { (out.org[o] || (out.org[o] = z()))[mf] += N(r.ca_fin); }
+      const o = (r.organisme || '').trim().toUpperCase(); if (N(r.ca_fin) && !hv) { (out.org[o] || (out.org[o] = z()))[mf] += N(r.ca_fin); }
       const g = (r.garantie || '').trim().toUpperCase(); (out.gar[g] || (out.gar[g] = z()))[mf]++;
     }
   }
@@ -590,21 +590,38 @@ function recapTable(st, sec) {
     const row = (lab, liv, fi, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${liv.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi">${fN(fi[i + 1])}</td>`).join('')}<td class="tt">${fN(liv[0])}</td><td class="tt">${fN(fi[0])}</td><td class="tt">${liv[0] ? fP(fi[0] / liv[0]) : '-'}</td></tr>`;
     V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; h += row(vlab(v), x.liv || Array(13).fill(0), x.fi || Array(13).fill(0), v === '__NA' ? 'na' : ''); });
     h += row('Total', st.liv, st.fi, 'sub');
-    V.filter(isHV).forEach(v => { const x = st.v[v] || {}; h += row(vlab(v) + ' <span class="note">· hors total</span>', x.liv || Array(13).fill(0), x.fi || Array(13).fill(0), 'obj'); });
     h += `<tr class="obj"><td class="lab">Objectif livraisons</td>${st.ol.slice(1).map(v => `<td colspan="2" style="text-align:center">${fN(v)}</td>`).join('')}<td class="tt">${fN(st.ol[0])}</td><td class="tt"></td><td class="tt"></td></tr>`;
     h += `<tr class="ec"><td class="lab">Taux FI</td>${st.liv.slice(1).map((v, i) => `<td colspan="2" style="text-align:center">${v ? fP(st.fi[i + 1] / v) : '-'}</td>`).join('')}<td class="tt"></td><td class="tt"></td><td class="tt">${st.liv[0] ? fP(st.fi[0] / st.liv[0]) : '-'}</td></tr>`;
-    return h + '</table>';
+    h += '</table>';
+    // IP FI = dossiers financés / VO livrés, par vendeur et par mois
+    const ip = (fi, liv) => liv.map((v, i) => v ? fi[i] / v : null);
+    const prow = (lab, arr, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${arr.slice(1).map(v => `<td class="${v == null ? 'z' : v >= 0.4 ? 'pos' : 'neg'}">${fP(v)}</td>`).join('')}<td class="tt ${arr[0] == null ? '' : arr[0] >= 0.4 ? 'pos' : 'neg'}">${fP(arr[0])}</td></tr>`;
+    let t2 = `<table class="mx" style="margin-top:6px">${hdr('IP FI (FI / VO livrés)', 'ANNÉE')}`;
+    V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; t2 += prow(vlab(v), ip(x.fi || Array(13).fill(0), x.liv || Array(13).fill(0)), v === '__NA' ? 'na' : ''); });
+    t2 += prow('IP FI du parc', ip(st.fi, st.liv), 'sub');
+    return h + t2 + '</table>';
   }
   if (sec === 'fin') {
     const orgs = [...new Set([...((S.params[st.sites[0]] || {}).organismes || []), ...Object.keys(st.org)])].filter(Boolean);
     return `<table class="mx">${hdr('CA financement par organisme')}${orgs.map(o => mrow(esc(o), st.org[o] || Array(13).fill(0), fE)).join('')}${st.org[''] ? mrow('Organisme non renseigné', st.org[''], fE, 'na') : ''}${mrow('Total', st.caf, fE, 'sub')}
-      ${hdr('CA financement par vendeur')}${g('caf', fE)}${mrow('Total', st.caf, fE, 'sub')}</table>`;
+      ${hdr('CA financement par vendeur')}${g('caf', fE, false)}${mrow('Total', st.caf, fE, 'sub')}</table>`;
   }
   if (sec === 'gar') {
     const gars = [...new Set([...((S.params[st.sites[0]] || {}).garanties || []), ...Object.keys(st.gar)])].filter(Boolean);
     return `<table class="mx">${hdr('Garanties (date facture)')}${gars.map(x => mrow(esc(x), st.gar[x] || Array(13).fill(0), fN)).join('')}${mrow('Sans garantie', st.gar[''] || Array(13).fill(0), fN)}${mrow('Total livré', st.liv, fN, 'sub')}</table>`;
   }
-  if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbee')}${g('bul', fN)}${mrow('Total Bulbee', st.bul, fN, 'sub')}${hdr('Frais admin')}${g('fa', fN)}${mrow('Total Frais admin', st.fa, fN, 'sub')}${hdr('Eurodatacar')}${g('edc', fN)}${mrow('Total Eurodatacar', st.edc, fN, 'sub')}${hdr('Reprises')}${g('rep', fN)}${mrow('Total Reprises', st.rep, fN, 'sub')}</table>`;
+  if (sec === 'acc') {
+    // Accessoires par vendeur (hors Cession, Alcopa, Marchand) + IP = accessoires / VO livrés
+    const VV = V.filter(v => !isHV(v)), Z = Array(13).fill(0);
+    const ipA = (n, liv) => liv.map((v, i) => v ? n[i] / v : null);
+    const prow = (lab, arr, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${arr.slice(1).map(v => `<td class="${v == null ? 'z' : ''}">${fP(v)}</td>`).join('')}<td class="tt">${fP(arr[0])}</td></tr>`;
+    let h = '<table class="mx">';
+    [['fa', 'Frais admin'], ['edc', 'Eurodatacar'], ['coy', 'Coyote'], ['pro', 'Protech'], ['bul', 'Bulbee'], ['rep', 'Reprises']].forEach(([k, lab]) => {
+      h += hdr(lab) + VV.map(v => mrow(vlab(v), (st.v[v] || {})[k] || Z, fN, v === '__NA' ? 'na' : '')).join('') + mrow('Total ' + lab, st[k], fN, 'sub');
+      h += hdr('IP ' + lab + ' (/ VO livrés)', 'ANNÉE') + VV.map(v => prow(vlab(v), ipA((st.v[v] || {})[k] || Z, (st.v[v] || {}).liv || Z), v === '__NA' ? 'na' : '')).join('') + prow('IP ' + lab + ' du parc', ipA(st[k], st.liv), 'sub');
+    });
+    return h + '</table>';
+  }
   if (sec === 'am') return `<table class="mx">${hdr('Ventes AM')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
   return '';
 }
