@@ -811,7 +811,7 @@ async function adminView() {
   const lbl = s => mapSites(s).map(x => (all.find(y => y.slug === x) || {label: x}).label).join(', ');
   const withAcc = S.comptes.filter(c => c.role !== 'aucun'), sans = S.comptes.filter(c => c.role === 'aucun');
   const row = c => `<tr><td><b>${esc(c.nom)}</b><div class="note mono">${esc(c.identifiant)}</div></td><td><span class="rtag ${c.role}">${ROLE_LBL[c.role] || c.role}</span>${c.propre ? '' : '<div class="note">selon Prospection</div>'}</td><td>${c.role === 'admin' ? 'Tous les parcs' : esc(lbl(c.sites))}</td>
-    <td style="white-space:nowrap"><button class="lnk" onclick="editAcc('${c.id}')">Modifier</button> · <button class="lnk" onclick="resetPwd('${c.id}')">Nouveau mot de passe</button></td></tr>`;
+    <td style="white-space:nowrap"><button class="lnk" onclick="editAcc('${c.id}')">Modifier</button> · <button class="lnk" onclick="resetPwd('${c.id}')">Nouveau mot de passe</button>${c.id === S.session.user.id ? '' : ` · <button class="lnk" style="color:var(--neg)" onclick="delAcc('${c.id}')">Supprimer</button>`}</td></tr>`;
   b.innerHTML = `<div class="ad"><div><div class="card"><div class="chead"><div><h3>Accès à l'outil</h3><div class="sub">${withAcc.length} personnes ont accès · les vendeurs n'ont pas accès</div></div></div>
       <table class="lt"><tr><th>Personne</th><th>Rôle</th><th>Parcs</th><th></th></tr>${withAcc.map(row).join('')}</table></div>
       <div class="card"><div class="chead"><div><h3>Comptes sans accès</h3><div class="sub">Comptes Prospection Atelier (vendeurs…) — « Modifier » pour donner un accès</div></div></div>
@@ -853,6 +853,12 @@ async function resetPwd(id) {
   const c = S.comptes.find(x => x.id === id);
   if (!confirm(`Générer un nouveau mot de passe pour ${c.nom} ?\nAttention : c'est aussi son mot de passe Prospection Atelier.`)) return;
   try { const r = await api({action: 'reset', id}); alert(`Nouveau mot de passe de ${c.nom} (${c.identifiant}) :\n\n${r.password}`); }
+  catch (err) { alert(err.message); }
+}
+async function delAcc(id) {
+  const c = S.comptes.find(x => x.id === id);
+  if (!confirm(`Supprimer définitivement le compte de ${c.nom} (${c.identifiant}) ?\nIl ne pourra plus se connecter. Les commandes qu'il a saisies sont conservées.`)) return;
+  try { await api({action: 'delete', id}); flash('Compte supprimé'); adminView(); }
   catch (err) { alert(err.message); }
 }
 function editAcc(id) {
@@ -905,7 +911,8 @@ async function previewImport() {
     if (o.organisme && /^FCA( BANK)?$/.test(o.organisme)) o.organisme = 'CA AUTO BANK';
     COLS.forEach(() => {
     });
-    if (!o.date_cde && !o.date_fact && !o.client && !o.immat) continue;
+    // Lignes vides du classeur (date + formule de marge seulement) : ignorées
+    if (!o.client && !o.immat && !o.vendeur && !o.modele) continue;
     if (ym(o.date_cde)[0] !== year && ym(o.date_fact)[0] !== year) continue;
     rows.push(o);
   }
