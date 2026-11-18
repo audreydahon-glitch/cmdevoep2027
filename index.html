@@ -409,7 +409,7 @@ function selLabel() {
 // ====================================================================
 function render() {
   const me = S.me;
-  const groups = GROUPS.map(g => ({g, sites: S.sites.filter(s => s.grp === g)})).filter(x => x.sites.length);
+  const groups = [...new Set(S.sites.map(s => s.grp))].map(g => ({g, sites: S.sites.filter(s => s.grp === g)})).filter(x => x.sites.length);
   const pressed = c => c ? 'aria-pressed="true"' : 'aria-pressed="false"';
   let chips = '';
   groups.forEach((x, i) => {
