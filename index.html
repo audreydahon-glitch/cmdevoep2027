@@ -124,7 +124,7 @@ table.xl thead th{overflow-wrap:anywhere;text-overflow:clip}
 table.xl thead th{position:sticky;z-index:2;font-size:8px;font-weight:400;line-height:1.15;white-space:normal;vertical-align:bottom;padding:4px 3px}
 table.xl thead tr.g th{top:0;height:20px;background:#fff;border:0}
 table.xl thead tr.g th.acc{border:1px solid #000;font-size:10px;background:#fff}
-table.xl thead tr.h th{top:20px;height:52px}
+table.xl thead tr.h th{top:0;height:52px}
 table.xl tbody tr{cursor:pointer}
 table.xl tbody tr:hover td{background:#eaf1ff}
 table.xl td.l{text-align:left}
@@ -675,7 +675,7 @@ function cmdView(site) {
       <select class="sel" onchange="S.f.vend=this.value;renderMain()"><option value="">Tous les vendeurs</option>${vends.map(v => `<option ${S.f.vend === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
       <input class="inp" id="q" placeholder="Rechercher (immat, client, modèle…)" value="${esc(S.f.q)}" oninput="S.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{renderMain();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)">
       <span class="cnt">${rows.length} ligne${rows.length > 1 ? 's' : ''}</span></div>
-    ${rows.length ? `<div class="xw"><table class="xl">${cg}<thead>${g}${h}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>` : `<div class="empty"><b>Aucune commande</b>${edit ? 'Ajoutez la première avec « + Nouvelle commande ».' : ''}</div>`}</div>`;
+    ${rows.length ? `<div class="xw"><table class="xl">${cg}<thead>${h}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>` : `<div class="empty"><b>Aucune commande</b>${edit ? 'Ajoutez la première avec « + Nouvelle commande ».' : ''}</div>`}</div>`;
 }
 
 // ---------- Fiche commande ----------
@@ -930,11 +930,11 @@ async function doImport() {
 function exportCmd(site) {
   const rows = cmdFiltered(site);
   const GC = GCOLS(), ai = GC.findIndex(c => c[0] === 'frais_admin'), aj = GC.findIndex(c => c[0] === 'bulbbee');
-  const aoa = [GC.map((c, i) => i === ai ? 'ACCESSOIRES' : null), GC.map(c => c[1])];
+  const aoa = [GC.map(c => c[1])];
   rows.forEach(r => aoa.push(GC.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])));
   const ws = XLSX.utils.aoa_to_sheet(aoa, {cellDates: true});
   ws['!cols'] = GC.map(c => ({wpx: COLW[c[0]] + 10}));
-  ws['!merges'] = [{s: {r: 0, c: ai}, e: {r: 0, c: aj}}];
+  
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'VO');
   XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label} ${S.year}.xlsx`);
 }
