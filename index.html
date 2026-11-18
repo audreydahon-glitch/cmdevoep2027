@@ -78,6 +78,16 @@ body.narrow .tiles{grid-template-columns:repeat(2,1fr)}
 .tile.dark .bar2{background:rgba(255,255,255,.2)}
 .tile .bar2 i{display:block;height:100%;border-radius:99px;background:var(--pos)}
 .tile .bar2 i.ko{background:#e5a23a}
+.accs{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:16px}
+body.narrow .accs{grid-template-columns:repeat(2,1fr)}
+.acc2{background:#fff;border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:12px 16px 12px;box-shadow:var(--shadow)}
+.acc2 .l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.acc2 .row{display:flex;align-items:baseline;justify-content:space-between;margin-top:4px}
+.acc2 .n{font-family:var(--f-d);font-weight:800;font-size:30px;color:var(--ink2);font-stretch:90%}
+.acc2 .p{font-family:var(--f-d);font-weight:800;font-size:22px;color:var(--c);font-stretch:90%}
+.acc2 .bar2{height:5px;border-radius:99px;background:var(--line2);margin-top:6px;overflow:hidden}
+.acc2 .bar2 i{display:block;height:100%;background:var(--c);border-radius:99px}
+.acc2 .s{font-size:12px;color:var(--muted);margin-top:5px}
 .ribbon{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}
 body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .rb{border-top:2px solid var(--ink2);padding:10px 2px 2px;font-size:15px;color:var(--ink2)}
@@ -453,11 +463,11 @@ function renderMain() {
 // ====================================================================
 function stats(sites, year) {
   const z = () => Array(13).fill(0);
-  const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(),
+  const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z(),
     v: {}, org: {}, gar: {}, sites};
   const vl = sites.length === 1 ? ((S.params[sites[0]] || {}).vendeurs || []) : [];
   const vk = name => { const k = (name || '').trim().toUpperCase(); return vl.includes(k) ? k : '__NA'; };
-  const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z()});
+  const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z()});
   for (const r of S.rows) {
     if (!sites.includes(r.site) || r.annulation) continue;
     const [yc, mc] = ym(r.date_cde), [yf, mf] = ym(r.date_fact);
@@ -469,16 +479,20 @@ function stats(sites, year) {
       if (r.fi) { if (!hv) out.fi[mf]++; v.fi[mf]++; }
       out.marge[mf] += N(r.marge_reelle); v.marge[mf] += N(r.marge_reelle);
       out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
-      if (r.coyote) { out.coy[mf]++; v.coy[mf]++; }
-      if (r.protech) { out.pro[mf]++; v.pro[mf]++; }
-      if (r.bulbbee) { out.bul[mf]++; v.bul[mf]++; }
-      if ((r.marque || '').trim().toUpperCase() === 'AM') { out.am[mf]++; v.am[mf]++; }
+      const c = hv ? 0 : 1;   // les ventes hors volume ne comptent pas dans les totaux (comme le classeur)
+      if (r.coyote) { out.coy[mf] += c; v.coy[mf]++; }
+      if (r.frais_admin) { out.fa[mf] += c; v.fa[mf]++; }
+      if (r.eurodatacar) { out.edc[mf] += c; v.edc[mf]++; }
+      if (r.reprise) { out.rep[mf] += c; v.rep[mf]++; }
+      if (r.protech) { out.pro[mf] += c; v.pro[mf]++; }
+      if (r.bulbbee) { out.bul[mf] += c; v.bul[mf]++; }
+      if ((r.marque || '').trim().toUpperCase() === 'AM') { out.am[mf] += c; v.am[mf]++; }
       const o = (r.organisme || '').trim().toUpperCase(); if (N(r.ca_fin)) { (out.org[o] || (out.org[o] = z()))[mf] += N(r.ca_fin); }
       const g = (r.garantie || '').trim().toUpperCase(); (out.gar[g] || (out.gar[g] = z()))[mf]++;
     }
   }
   const sum = a => a.slice(1).reduce((x, y) => x + y, 0);
-  for (const k of ['cde','liv','fi','marge','caf','coy','pro','bul','am']) out[k][0] = sum(out[k]);
+  for (const k of ['cde','liv','fi','marge','caf','coy','pro','bul','am','fa','edc','rep']) out[k][0] = sum(out[k]);
   Object.values(out.v).forEach(v => Object.keys(v).forEach(k => v[k][0] = sum(v[k])));
   Object.values(out.org).forEach(a => a[0] = sum(a)); Object.values(out.gar).forEach(a => a[0] = sum(a));
   // Objectifs
@@ -506,7 +520,7 @@ function tilesHtml(st) {
     ['ac" style="--c:#2e7d4f', 'Taux FI', fP(tf), `${nf0.format(st.fi[0])} financements`, ''],
     ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[0]), objTxt(st.marge[0], st.om[0], fE), bar(pct(st.marge[0], st.om[0]))],
     ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[0] ? fE(st.marge[0] / st.liv[0]) : '-', `sur ${nf0.format(st.liv[0])} VO livrés`, ''],
-    ['ac" style="--c:#b7791f', 'Accessoires', fN(acc), `Coyote ${st.coy[0]} · Protech ${st.pro[0]} · Bulbbee ${st.bul[0]}`, ''],
+    ['ac" style="--c:#5b3fb0', 'CA financement', fE(st.caf[0]), `${nf0.format(st.fi[0])} dossiers financés`, ''],
   ];
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
   const R = [
@@ -518,7 +532,11 @@ function tilesHtml(st) {
   ];
   if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
   else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
-  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>
+  const liv = st.liv[0];
+  const A = [['Coyote', st.coy[0], '#ED7D31'], ['Frais admin', st.fa[0], '#7aa95c'], ['Bulbbee', st.bul[0], '#d99a14'],
+    ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes autres marques', st.am[0], '#8a6bc9']];
+  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des ${nf0.format(liv)} VO livrés</div></div>`; }).join('')}</div>`;
+  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
 }
 
@@ -575,7 +593,7 @@ function recapTable(st, sec) {
     const gars = [...new Set([...((S.params[st.sites[0]] || {}).garanties || []), ...Object.keys(st.gar)])].filter(Boolean);
     return `<table class="mx">${hdr('Garanties (date facture)')}${gars.map(x => mrow(esc(x), st.gar[x] || Array(13).fill(0), fN)).join('')}${mrow('Sans garantie', st.gar[''] || Array(13).fill(0), fN)}${mrow('Total livré', st.liv, fN, 'sub')}</table>`;
   }
-  if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbbee')}${g('bul', fN)}${mrow('Total Bulbbee', st.bul, fN, 'sub')}</table>`;
+  if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbbee')}${g('bul', fN)}${mrow('Total Bulbbee', st.bul, fN, 'sub')}${hdr('Frais admin')}${g('fa', fN)}${mrow('Total Frais admin', st.fa, fN, 'sub')}${hdr('Eurodatacar')}${g('edc', fN)}${mrow('Total Eurodatacar', st.edc, fN, 'sub')}${hdr('Reprises')}${g('rep', fN)}${mrow('Total Reprises', st.rep, fN, 'sub')}</table>`;
   if (sec === 'am') return `<table class="mx">${hdr('Ventes autres marques (AM)')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
   return '';
 }
@@ -663,11 +681,12 @@ function openCmd(id) {
   const dl = (name, arr) => `<datalist id="${name}">${(arr || []).map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
   const inp = (k, lab, type, cls, list) => `<div class="f ${cls || ''}"><label>${lab}</label><input name="${k}" type="${type || 'text'}" ${type === 'number' ? 'step="any"' : ''} value="${esc(r[k] == null ? '' : r[k])}" ${list ? `list="${list}"` : ''} ${ro ? 'disabled' : ''}></div>`;
   const tg = (k, lab, red) => `<button type="button" class="tg ${red ? 'red' : ''}" data-k="${k}" aria-pressed="${!!r[k]}" ${ro ? 'disabled' : ''} onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">${lab}</button>`;
+  const yn = (id, lab, on) => `<div class="f"><label>${lab}</label><div class="seg" id="${id}">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === on}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true')">${v}</button>`).join('')}</div></div>`;
   const sec = (t, c, inner) => `<div class="fs"><h4><i style="background:${c}"></i>${t}</h4>${inner}</div>`;
   const d = document.createElement('div'); d.className = 'drawer';
   d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
     <div class="dbody">
-    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${inp('vendeur', 'Vendeur', 'text', '', 'dlv')}${inp('cession', 'Cession')}<div class="f"><label>Reprise</label><div class="seg" id="rep">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === !!r.reprise}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true')">${v}</button>`).join('')}</div></div></div>`)}
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${inp('vendeur', 'Vendeur', 'text', '', 'dlv')}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
     ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT', 'number')}${inp('jours_stock', 'Nbre jour stock', 'number')}${inp('remise_ttc', 'Remise TTC', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle', 'number')}${inp('marge_vendeur', 'Marge HT vendeur', 'number')}${inp('marge_reelle', 'Marge réelle HT', 'number')}</div>`)}
     ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbbee')}</div>`)}
     ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('annulation', 'Annulée', true)}</div>`)}
@@ -693,6 +712,7 @@ async function saveCmd(id, site) {
   COLS.forEach(([k, , t]) => {
     if (k === 'reprise') { const b = f.querySelector('#rep button[aria-pressed="true"]'); o[k] = !!b && b.textContent === 'Oui'; return; }
     if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); if (b) o[k] = b.getAttribute('aria-pressed') === 'true'; return; }
+    if (k === 'cession') { const b = f.querySelector('#ces button[aria-pressed="true"]'); o[k] = b && b.textContent === 'Oui' ? 'OUI' : null; return; }
     const el = f.elements[k]; if (!el) return;
     if (k === 'immat') { o[k] = fmtImmat(el.value.trim()) || null; return; }
     let v = el.value.trim();
@@ -865,7 +885,10 @@ async function previewImport() {
       if (t === 'date') o[k] = xDate(v);
       else if (t === 'eur' || t === 'int') o[k] = xNum(v);
       else if (t === 'bool') o[k] = xBool(v);
-      else { const t2 = v == null ? '' : String(v).trim(); o[k] = t2 === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat'].includes(k) ? t2.toUpperCase() : t2); }
+      else { const t2 = v == null ? '' : String(v).trim(); o[k] = t2 === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat', 'cession'].includes(k) ? t2.toUpperCase() : t2); }
+    });
+    if (o.organisme && /^FCA( BANK)?$/.test(o.organisme)) o.organisme = 'CA AUTO BANK';
+    COLS.forEach(() => {
     });
     if (!o.date_cde && !o.date_fact && !o.client && !o.immat) continue;
     if (ym(o.date_cde)[0] !== year && ym(o.date_fact)[0] !== year) continue;
