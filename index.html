@@ -194,6 +194,13 @@ table.mx{border-collapse:separate;border-spacing:0;width:100%}
 .lg td{white-space:normal;vertical-align:top;text-align:left}
 .ad{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
 .chk{display:flex;flex-wrap:wrap;gap:6px 14px}
+.pp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.ppg{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fbfcfd}
+.ppt{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.ppt .lnk{font-size:11px;letter-spacing:0;text-transform:none}
+label.ppi,.pbox label.ppi,.f label.ppi{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:5px 4px;border-radius:6px;font-size:13px;color:var(--ink2);cursor:pointer}
+label.ppi:hover{background:var(--accent-soft)}
+label.ppi input{width:16px!important;height:16px;min-height:0!important;padding:0!important;margin:0;flex:none}
 .chk label{display:flex;gap:6px;align-items:center;font-size:12.5px;white-space:nowrap}
 .creds{margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fbfcfd}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
@@ -595,7 +602,7 @@ function objRows(tot, obj, f) {
 function vlab(k) { return k === '__NA' ? 'Non affecté' : esc(k); }
 function recapTable(st, sec) {
   const V = vendRows(st), g = (k, f, only) => V.filter(v => only == null || isHV(v) === only).map(v => mrow(vlab(v) + (only === true ? ' <span class="note">· hors total</span>' : ''), (st.v[v] || {})[k] || Array(13).fill(0), f, v === '__NA' ? 'na' : only === true ? 'obj' : '')).join('');
-  if (sec === 'cde') return `<table class="mx">${hdr('Commandes (date cde)')}${g('cde', fN, false)}${mrow('Total', st.cde, fN, 'sub')}${objRows(st.cde, st.oc, fN)}${g('cde', fN, true)}</table>`;
+  if (sec === 'cde') return `<table class="mx">${hdr('Commandes (date cde)')}${g('cde', fN, false)}${mrow('Total', st.cde, fN, 'sub')}${objRows(st.cde, st.oc, fN)}</table>`;
   if (sec === 'marge') {
     const moy = st.marge.map((v, i) => st.liv[i] ? v / st.liv[i] : 0);
     return `<table class="mx">${hdr('Marge réelle HT (date facture)', 'CUMUL')}${g('marge', fE)}${mrow('Total', st.marge, fE, 'sub')}${objRows(st.marge, st.om, fE)}${mrow('Marge moy. / VO livré', moy, fE, 'ec')}</table>`;
@@ -879,7 +886,7 @@ async function adminView() {
     <div><div class="card"><div class="chead"><h3>Créer un compte</h3></div><form class="pad" id="nf">
       <div class="f"><label>Prénom et nom</label><input name="nom" required placeholder="Sandra MARTIN"></div>
       <div class="f" style="margin-top:10px"><label>Rôle</label><select name="role"><option value="assistante">Assistante commerciale</option><option value="chef">Chef des ventes</option><option value="directeur">Directeur</option><option value="admin">Administrateur</option></select></div>
-      <div class="f" style="margin-top:10px"><label>Parcs</label><div class="chk">${all.map(s => `<label><input type="checkbox" value="${s.slug}">${esc(s.label)}</label>`).join('')}</div></div>
+      <div class="f" style="margin-top:10px"><label>Parcs</label>${parcPicker([])}</div>
       <div class="row2"><button class="btn" type="submit">Créer le compte</button><span class="dmsg" id="nm"></span></div><div id="nc"></div></form></div>
     <div class="card"><div class="chead"><h3>Importer un classeur Excel</h3></div><div class="pad">
       <p class="note" style="margin-top:0">Onglet des commandes au format du classeur (colonnes A à AD, en-têtes en ligne 2). Remplace les commandes de l'année choisie pour ce parc.</p>
@@ -899,7 +906,7 @@ async function api(body) {
 }
 async function createAcc(e) {
   e.preventDefault();
-  const f = e.target, sites = [...f.querySelectorAll('.chk input:checked')].map(i => i.value).join(',');
+  const f = e.target, sites = [...f.querySelectorAll('.pp input:checked')].map(i => i.value).join(',');
   $('#nm').textContent = 'Création…';
   try {
     const r = await api({action: 'create', nom: f.nom.value, role: f.role.value, sites});
@@ -921,19 +928,24 @@ async function delAcc(id) {
   try { await api({action: 'delete', id}); flash('Compte supprimé'); adminView(); }
   catch (err) { alert(err.message); }
 }
+// Liste des parcs à cocher, regroupés par concession
+function parcPicker(cur) {
+  const groups = [...new Set(S.sites.map(x => x.grp))];
+  return `<div class="pp">${groups.map(g => `<div class="ppg"><div class="ppt">${esc(g)}<button type="button" class="lnk" onclick="const b=this.closest('.ppg').querySelectorAll('input');const all=[...b].every(i=>i.checked);b.forEach(i=>i.checked=!all)">tout</button></div>${S.sites.filter(x => x.grp === g).map(x => `<label class="ppi"><input type="checkbox" value="${x.slug}" ${cur.includes(x.slug) ? 'checked' : ''}><span>${esc(x.label)}</span></label>`).join('')}</div>`).join('')}</div>`;
+}
 function editAcc(id) {
   const c = S.comptes.find(x => x.id === id);
   const cur = mapSites(c.sites);
   const d = document.createElement('div'); d.className = 'modal';
-  d.innerHTML = `<form class="pbox" id="ef" style="max-width:520px"><h3>${esc(c.nom)}</h3><div class="note">${esc(c.identifiant)}</div>
+  d.innerHTML = `<form class="pbox" id="ef" style="max-width:620px"><h3>${esc(c.nom)}</h3><div class="note">${esc(c.identifiant)}</div>
     <label>Rôle dans le Tableau des Commandes</label><select class="sel" name="role" style="width:100%">${['aucun', 'assistante', 'chef', 'directeur', 'admin'].map(r => `<option value="${r}" ${c.role === r ? 'selected' : ''}>${ROLE_LBL[r]}</option>`).join('')}</select>
-    <label>Parcs</label><div class="chk">${S.sites.map(s => `<label><input type="checkbox" value="${s.slug}" ${cur.includes(s.slug) ? 'checked' : ''}>${esc(s.label)}</label>`).join('')}</div>
+    <label>Parcs</label>${parcPicker(cur)}
     <p class="note">Ne change rien dans Prospection Atelier.</p>
     <div class="row2"><button class="btn" type="submit">Enregistrer</button><button type="button" class="btn ghost" onclick="this.closest('.modal').remove()">Annuler</button></div></form>`;
   document.body.appendChild(d);
   $('#ef').onsubmit = async e => {
     e.preventDefault();
-    const role = e.target.role.value, sites = [...e.target.querySelectorAll('.chk input:checked')].map(i => i.value).join(',');
+    const role = e.target.role.value, sites = [...e.target.querySelectorAll('.pp input:checked')].map(i => i.value).join(',');
     const { error } = await S.sb.from('tc_acces').upsert({user_id: id, role, sites, updated_at: new Date().toISOString()});
     if (error) { alert(error.message); return; }
     d.remove(); flash('Accès mis à jour'); adminView();
