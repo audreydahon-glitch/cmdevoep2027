@@ -156,7 +156,7 @@ table.mx{border-collapse:separate;border-spacing:0;width:100%}
 .secs{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between}
 
 /* Paramètres */
-.pg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
 .pg textarea{width:100%;min-height:220px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:inherit}
 .og td,.og th{padding:4px 6px}
 .og input{width:100%;text-align:right;border:1px solid var(--line);border-radius:6px;padding:5px 7px}
@@ -238,7 +238,7 @@ const COLS = [
   ['date_cde','DATE CDE','date','#F4B183'],['marque','MARQUE','text','#F4B183'],['modele','MODELE','text','#F4B183'],
   ['immat',"N° D'IMMAT",'text','#F4B183'],['client','CLIENT','text','#F4B183'],['vendeur','VENDEUR','vend','#F8CBAD'],
   ['cession','CESSION','text','#F8CBAD'],['repreneur','REPRENEUR','text','#F8CBAD'],['prix_vente_ht','PRIX DE VENTE HT','eur','#FFE699'],
-  ['jours_stock','NBRE JOUR STOCK','int','#FFC000'],['marge_prev','MARGE HT PREVISIONNELLE','eur','#C9C9C9'],
+  ['jours_stock','NBRE JOUR STOCK','stock','#FFC000'],['marge_prev','MARGE HT PREVISIONNELLE','eur','#C9C9C9'],
   ['marge_vendeur','MARGE HT VENDEUR','eur','#C9C9C9'],['marge_reelle','MARGE REELLE HT','eur','#4472C4','#fff'],
   ['remise_ttc','REMISE TTC','eur','#8497B0','#fff'],['frais_admin','FRAIS ADMIN','bool','#C6E0B4'],['eurodatacar','EURODATACAR','bool','#C6E0B4'],
   ['pack_liv','PACK LIV 990','bool','#C6E0B4'],['coyote','COYOTE','bool','#ED7D31'],['protech','PROTECH','bool','#ED7D31'],
@@ -254,6 +254,8 @@ const COLW = {date_cde:54,marque:70,modele:74,immat:66,client:90,vendeur:72,cess
 const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
 // Base commune à tous les parcs (ajoutée automatiquement à la liste des vendeurs de chaque parc)
 const BASE_VEND = ['ALCOPA', 'MARCHAND', 'CESSION', 'DIRECTION'];
+const MARQ_DEF = {'MB': ['MERCEDES', 'AM'], 'FMC / NSA': ['FORD', 'NISSAN', 'AM'], 'GVA': ['VOLKSWAGEN', 'AUDI', 'AM'], 'GEELY': ['GEELY', 'AM'], 'BYD': ['BYD', 'AM']};
+const marqList = site => { const l = ((S.params[site] || {}).marques) || []; return l.length ? l : (MARQ_DEF[(S.sites.find(x => x.slug === site) || {}).grp] || ['AM']); };
 const vendList = site => [...new Set([...(((S.params[site] || {}).vendeurs) || []), ...BASE_VEND])];
 const BOOLS = COLS.filter(c => c[2] === 'bool').map(c => c[0]);
 const NUMS = COLS.filter(c => c[2] === 'eur' || c[2] === 'int').map(c => c[0]);
@@ -653,8 +655,8 @@ function cmdView(site) {
     const [k, , t] = c, v = r[k];
     if (t === 'bool') return k === 'annulation' ? `<td class="u">${v ? 1 : ''}</td>` : `<td>${v ? 1 : ''}</td>`;
     if (t === 'date') return `<td>${fD(v)}</td>`;
-    if (t === 'eur') return `<td class="r ${N(v) < 0 ? 'neg' : ''}">${v == null || v === '' ? '' : nf0.format(Math.round(N(v)))}</td>`;
-    if (t === 'int') return `<td class="${N(v) > 180 ? 'st' : ''}">${v == null ? '' : nf0.format(N(v))}</td>`;
+    if (t === 'eur') return `<td class="r ${N(v) < 0 ? 'neg' : ''}">${v == null || v === '' ? '' : nf0.format(Math.round(N(v))) + ' €'}</td>`;
+    if (t === 'int' || t === 'stock') return `<td class="${N(v) > 180 ? 'st' : ''}" title="${esc(v)}">${v == null ? '' : esc(v)}</td>`;
     if (k === 'client' || k === 'commentaires') return `<td class="l" title="${esc(v)}">${esc(v)}</td>`;
     return `<td title="${esc(v)}">${esc(v)}</td>`;
   };
@@ -668,7 +670,7 @@ function cmdView(site) {
   const h = `<tr class="h">${GC.map(c => `<th style="background:${c[3]};color:${c[4] || '#000'}">${c[1]}</th>`).join('')}</tr>`;
   const cg = `<colgroup>${GC.map(c => `<col style="width:${COLW[c[0]]}px">`).join('')}</colgroup>`;
   const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}" onclick="openCmd('${r.id}')">${GC.map(c => cell(c, r)).join('')}</tr>`).join('');
-  const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r">${nf0.format(Math.round(tot(k)))}</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
+  const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r">${nf0.format(Math.round(tot(k)))} €</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
   return `<div class="card"><div class="chead"><div><h3>Commandes VO · ${esc(siteObj(site).label)}</h3><div class="sub">Même présentation que le classeur · cliquer sur une ligne pour la modifier</div></div>
       <div class="tools"><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
     <div class="filters"><div class="seg">${vues.map(v => `<button aria-pressed="${S.f.vue === v[0]}" onclick="S.f.vue='${v[0]}';renderMain()">${v[1]}</button>`).join('')}</div>
@@ -689,20 +691,22 @@ function openCmd(id) {
   const inp = (k, lab, type, cls, list) => `<div class="f ${cls || ''}"><label>${lab}</label><input name="${k}" type="${type || 'text'}" ${type === 'number' ? 'step="any"' : ''} value="${esc(r[k] == null ? '' : r[k])}" ${list ? `list="${list}"` : ''} ${ro ? 'disabled' : ''}></div>`;
   const tg = (k, lab, red) => `<button type="button" class="tg ${red ? 'red' : ''}" data-k="${k}" aria-pressed="${!!r[k]}" ${ro ? 'disabled' : ''} onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">${lab}</button>`;
   // Vendeur : menu déroulant alimenté par la liste du parc (onglet Vendeurs & objectifs)
-  const vsel = () => {
-    const list = vendList(r.site), cur = (r.vendeur || '').toUpperCase(), autre = !!cur && !list.includes(cur);
-    return `<div class="f"><label>Vendeur</label><select name="vendeur_sel" ${ro ? 'disabled' : ''} required onchange="const a=this.form.elements.vendeur_autre;a.hidden=this.value!=='__AUTRE';if(!a.hidden)a.focus()"><option value="">— Choisir —</option>${list.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('')}<option value="__AUTRE" ${autre ? 'selected' : ''}>Autre (saisir)…</option></select>
-      <input name="vendeur_autre" placeholder="Nom du vendeur" value="${autre ? esc(cur) : ''}" ${autre ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"></div>`;
+  // Menu déroulant + « Autre (saisir)… » (vendeurs et marques, listes réglables par parc)
+  const lsel = (k, lab, list, ph, req) => {
+    const cur = (r[k] || '').toUpperCase(), autre = !!cur && !list.includes(cur);
+    return `<div class="f"><label>${lab}</label><select name="${k}_sel" ${ro ? 'disabled' : ''} ${req ? 'required' : ''} onchange="const a=this.form.elements.${k}_autre;a.hidden=this.value!=='__AUTRE';if(!a.hidden)a.focus()"><option value="">— Choisir —</option>${list.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('')}<option value="__AUTRE" ${autre ? 'selected' : ''}>Autre (saisir)…</option></select>
+      <input name="${k}_autre" placeholder="${ph}" value="${autre ? esc(cur) : ''}" ${autre ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"></div>`;
   };
+  const vsel = () => lsel('vendeur', 'Vendeur', vendList(r.site), 'Nom du vendeur', true);
   const yn = (id, lab, on) => `<div class="f"><label>${lab}</label><div class="seg" id="${id}">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === on}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true')">${v}</button>`).join('')}</div></div>`;
   const sec = (t, c, inner) => `<div class="fs"><h4><i style="background:${c}"></i>${t}</h4>${inner}</div>`;
   const d = document.createElement('div'); d.className = 'drawer';
   d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
     <div class="dbody">
-    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
-    ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT', 'number')}${inp('jours_stock', 'Nbre jour stock', 'number')}${inp('remise_ttc', 'Remise TTC', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle', 'number')}${inp('marge_vendeur', 'Marge HT vendeur', 'number')}${inp('marge_reelle', 'Marge réelle HT', 'number')}</div>`)}
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${lsel('marque', 'Marque', marqList(r.site), 'Marque')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
+    ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT (€)', 'number')}${inp('jours_stock', 'Nbre jour stock')}${inp('remise_ttc', 'Remise TTC (€)', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle (€)', 'number')}${inp('marge_vendeur', 'Marge HT vendeur (€)', 'number')}${inp('marge_reelle', 'Marge réelle HT (€)', 'number')}</div>`)}
     ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbee')}</div>`)}
-    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('annulation', 'Annulée', true)}</div>`)}
+    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement (€)', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('annulation', 'Annulée', true)}</div>`)}
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
@@ -725,7 +729,7 @@ async function saveCmd(id, site) {
   COLS.forEach(([k, , t]) => {
     if (k === 'reprise') { const b = f.querySelector('#rep button[aria-pressed="true"]'); o[k] = !!b && b.textContent === 'Oui'; return; }
     if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); if (b) o[k] = b.getAttribute('aria-pressed') === 'true'; return; }
-    if (k === 'vendeur') { const sv = f.elements.vendeur_sel.value; o[k] = (sv === '__AUTRE' ? f.elements.vendeur_autre.value.trim().toUpperCase() : sv) || null; return; }
+    if (k === 'vendeur' || k === 'marque') { const sv = f.elements[k + '_sel'].value; o[k] = (sv === '__AUTRE' ? f.elements[k + '_autre'].value.trim().toUpperCase() : sv) || null; return; }
     if (k === 'cession') { const b = f.querySelector('#ces button[aria-pressed="true"]'); o[k] = b && b.textContent === 'Oui' ? 'OUI' : null; return; }
     const el = f.elements[k]; if (!el) return;
     if (k === 'immat') { o[k] = fmtImmat(el.value.trim()) || null; return; }
@@ -764,7 +768,7 @@ function paramView(site) {
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
     <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
-    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}<p class="note">Toujours ajoutés pour tous les parcs : ${BASE_VEND.join(', ')}.</p></div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
+    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}<p class="note">Toujours ajoutés pour tous les parcs : ${BASE_VEND.join(', ')}.</p></div><div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}<p class="note">« AM » = autres marques (compté en Ventes AM).</p></div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
 }
 async function saveObj(site) {
   const by = {};
@@ -777,7 +781,7 @@ async function saveObj(site) {
 }
 async function saveParams(site) {
   const L = k => [...new Set($('#p_' + k).value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean))];
-  const o = {vendeurs: L('vendeurs'), organismes: L('organismes'), garanties: L('garanties'), updated_at: new Date().toISOString()};
+  const o = {vendeurs: L('vendeurs'), marques: L('marques'), organismes: L('organismes'), garanties: L('garanties'), updated_at: new Date().toISOString()};
   const { error } = await S.sb.from('tc_params').update(o).eq('site', site);
   if (error) { flash('Erreur : ' + error.message); return; }
   Object.assign(S.params[site], o); flash('Listes enregistrées'); renderMain();
