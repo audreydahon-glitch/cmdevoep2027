@@ -70,7 +70,9 @@ body.narrow .tiles{grid-template-columns:repeat(2,1fr)}
 .tile .l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
 .tile .v{font-family:var(--f-d);font-weight:800;font-size:38px;letter-spacing:-.01em;margin-top:6px;font-stretch:90%;line-height:1.1;color:var(--ink2)}
 .tile .s{font-size:13px;color:var(--muted);margin-top:4px}
-.tile .s b,.acc2 .s b{color:var(--ink);font-weight:800}.tile.dark .s b{color:#fff}
+/* Chiffres du bandeau du haut sans gras */
+.tile .v,.acc2 .n,.acc2 .p{font-weight:500!important}
+.rb b{font-weight:500!important}
 .tile.dark{background:var(--slate);border-color:var(--slate)}
 .tile.dark .l{color:#dce3ec}.tile.dark .v{color:#fff}.tile.dark .s{color:#dce3ec}
 .tile.ac::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
@@ -261,8 +263,8 @@ const MARGE_PLUS = {'mb-villeneuve': 500, 'mb-cannes': 500};
 const MARGE_PLUS_EXCLUS = ['CESSION', 'ALCOPA'];   // pour ces lignes, la marge réelle se saisit à la main
 const MARQ_DEF = {'MB': ['MERCEDES', 'AM'], 'FMC / NSA': ['FORD', 'NISSAN', 'AM'], 'GVA': ['VOLKSWAGEN', 'AUDI', 'AM'], 'GEELY': ['GEELY', 'AM'], 'BYD': ['BYD', 'AM']};
 // Entités par parc (réglables dans « Vendeurs & objectifs ») et marque associée à chaque entité
-const ENT_DEF = {'mb-villeneuve': ['MB', 'GEELY'], 'mb-roquebrune': ['MB', 'BYD'], 'mb-toulon': ['MB', 'BYD'], 'nsa-cannes': ['NSA', 'FMC', 'GEELY'], 'fmc-nice': ['FMC', 'NSA']};
-const ENT_MARQ = {MB: 'MERCEDES', GEELY: 'GEELY', BYD: 'BYD', NSA: 'NISSAN', FMC: 'FORD', AUDI: 'AUDI', VW: 'VOLKSWAGEN'};
+const ENT_DEF = {'mb-villeneuve': ['MB', 'GEELY'], 'mb-roquebrune': ['MB', 'VUL', 'BYD', 'VO'], 'mb-toulon': ['MB', 'VUL', 'BYD', 'VO'], 'nsa-cannes': ['NSA', 'FMC', 'GEELY'], 'fmc-nice': ['FMC', 'NSA']};
+const ENT_MARQ = {MB: 'MERCEDES', VUL: 'MERCEDES', VO: 'AM', GEELY: 'GEELY', BYD: 'BYD', NSA: 'NISSAN', FMC: 'FORD', AUDI: 'AUDI', VW: 'VOLKSWAGEN'};
 const entList = site => { const l = ((S.params[site] || {}).entites) || []; return l.length ? l : (ENT_DEF[site] || []); };
 const marqList0 = site => { const e = entList(site); return e.length ? [...new Set([...e.map(x => ENT_MARQ[x] || x), 'AM'])] : null; };
 const marqList = site => { const l = ((S.params[site] || {}).marques) || []; return l.length ? l : (marqList0(site) || MARQ_DEF[(S.sites.find(x => x.slug === site) || {}).grp] || ['AM']); };
@@ -278,7 +280,7 @@ const S = {
   sites: [], params: {}, obj: {}, rows: [], names: {},
   sel: null,            // {t:'site', s:'mb-villeneuve'} | {t:'grp', g:'MB'} | {t:'all'}
   tab: 'recap', year: new Date().getFullYear(), month: new Date().getMonth() + 1,
-  recapSec: null, totSec: null,   // détail masqué tant qu'on n'a pas cliqué sur un onglet
+  recapSec: null, totSec: null, ent: null,   // détail masqué tant qu'on n'a pas cliqué sur un onglet
   f: {q: '', vend: '', mois: '', vue: 'toutes'},
   live: false,
 };
@@ -446,7 +448,7 @@ function render() {
     <div id="main"></div></div>`;
   renderMain();
 }
-function pick(t, v) { S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site') S.tab = 'cmd'; render(); }
+function pick(t, v) { S.ent = null; S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site') S.tab = 'cmd'; render(); }
 function go(t) { S.tab = t; renderMain(); }
 
 function renderMain() {
@@ -479,7 +481,7 @@ function renderMain() {
 //  Commandes : date de commande · Livraisons, marge, financement, garanties, accessoires : date de facture
 //  Une commande annulée est exclue de tous les calculs.
 // ====================================================================
-function stats(sites, year) {
+function stats(sites, year, ent) {
   const z = () => Array(13).fill(0);
   const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z(),
     v: {}, org: {}, gar: {}, sites};
@@ -488,6 +490,7 @@ function stats(sites, year) {
   const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z()});
   for (const r of S.rows) {
     if (!sites.includes(r.site) || r.annulation) continue;
+    if (ent && (r.entite || '').toUpperCase() !== ent) continue;
     const [yc, mc] = ym(r.date_cde), [yf, mf] = ym(r.date_fact);
     const k = vk(r.vendeur), hv = HORS_VOL.includes((r.vendeur || '').trim().toUpperCase());
     if (yc === year && mc) { if (!hv) out.cde[mc]++; V(k).cde[mc]++; }
@@ -515,7 +518,7 @@ function stats(sites, year) {
   Object.values(out.org).forEach(a => a[0] = sum(a)); Object.values(out.gar).forEach(a => a[0] = sum(a));
   // Objectifs
   out.oc = z(); out.ol = z(); out.om = z();
-  for (const s of sites) for (let m = 1; m <= 12; m++) {
+  if (!ent) for (const s of sites) for (let m = 1; m <= 12; m++) {   // objectifs : au niveau du parc (vue Global)
     const o = S.obj[s + '|' + year + '|' + m]; if (!o) continue;
     out.oc[m] += N(o.cde); out.ol[m] += N(o.liv); out.om[m] += N(o.marge);
   }
@@ -555,16 +558,20 @@ function tilesHtml(st) {
   const liv = st.liv[0];
   const A = [['Frais admin', st.fa[0], '#7aa95c'], ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Coyote', st.coy[0], '#ED7D31'],
     ['Bulbee', st.bul[0], '#d99a14'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes AM', st.am[0], '#8a6bc9']];
-  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des <b>${nf0.format(liv)}</b> VO livrés</div></div>`; }).join('')}</div>`;
-  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${boldNums(t[3])}</div>${t[4]}</div>`).join('')}</div>${accRow}
+  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des ${nf0.format(liv)} VO livrés</div></div>`; }).join('')}</div>`;
+  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
 }
 
 // ---------- Récap d'un parc ----------
 function recapSite(site) {
-  const st = stats([site], S.year);
+  const ents = entList(site);
+  if (!ents.includes(S.ent)) S.ent = null;
+  const st = stats([site], S.year, S.ent);
   const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
-  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>`;
+  const sansEnt = S.ent ? S.rows.filter(r => r.site === site && !r.annulation && !r.entite && (ym(r.date_cde)[0] === S.year || ym(r.date_fact)[0] === S.year)).length : 0;
+  const entBar = ents.length > 1 ? `<div class="seg" style="margin-bottom:12px">${[null, ...ents].map(e => `<button aria-pressed="${S.ent === e}" onclick="S.ent=${e ? `'${e}'` : 'null'};renderMain()">${e ? esc(e) : 'Global site'}</button>`).join('')}</div>${S.ent && sansEnt ? `<span class="note" style="margin-left:12px">${sansEnt} commande(s) sans entité ne sont pas comptées dans cette vue</span>` : ''}` : '';
+  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)}${S.ent ? ' · ' + esc(S.ent) : ''} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}${S.ent ? ' · objectifs : vue Global' : ''}</span></div>` + entBar;
   return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec=S.recapSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
     <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div>${S.recapSec ? `<div style="overflow:auto">${recapTable(st, S.recapSec)}</div>` : ''}</div>`;
 }
@@ -999,7 +1006,7 @@ function exportCmd(site) {
   XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label} ${S.year}.xlsx`);
 }
 function exportRecap() {
-  const site = S.sel.s, st = stats([site], S.year), wb = XLSX.utils.book_new();
+  const site = S.sel.s, st = stats([site], S.year, S.ent), wb = XLSX.utils.book_new();
   const H = t => [t, ...MOIS, 'TOTAL'];
   const add = (name, blocks) => {
     const aoa = [];
