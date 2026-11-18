@@ -70,6 +70,7 @@ body.narrow .tiles{grid-template-columns:repeat(2,1fr)}
 .tile .l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
 .tile .v{font-family:var(--f-d);font-weight:800;font-size:38px;letter-spacing:-.01em;margin-top:6px;font-stretch:90%;line-height:1.1;color:var(--ink2)}
 .tile .s{font-size:13px;color:var(--muted);margin-top:4px}
+.tile .s b,.acc2 .s b{color:var(--ink);font-weight:800}.tile.dark .s b{color:#fff}
 .tile.dark{background:var(--slate);border-color:var(--slate)}
 .tile.dark .l{color:#dce3ec}.tile.dark .v{color:#fff}.tile.dark .s{color:#dce3ec}
 .tile.ac::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
@@ -523,6 +524,8 @@ function stats(sites, year) {
   return out;
 }
 
+// Met en gras les chiffres d'un texte (ex. « objectif 600 · 85 % »)
+const boldNums = t => String(t).replace(/-?\d[\d\u202f\u00a0 ]*(?:[.,]\d+)?(?:\s?[%€])?/g, m => `<b>${m.trim()}</b> `).replace(/ $/, '');
 // ---------- Tuiles + bandeau du mois ----------
 function tilesHtml(st) {
   const m = S.month;
@@ -552,8 +555,8 @@ function tilesHtml(st) {
   const liv = st.liv[0];
   const A = [['Frais admin', st.fa[0], '#7aa95c'], ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Coyote', st.coy[0], '#ED7D31'],
     ['Bulbee', st.bul[0], '#d99a14'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes AM', st.am[0], '#8a6bc9']];
-  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des ${nf0.format(liv)} VO livrés</div></div>`; }).join('')}</div>`;
-  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
+  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des <b>${nf0.format(liv)}</b> VO livrés</div></div>`; }).join('')}</div>`;
+  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${boldNums(t[3])}</div>${t[4]}</div>`).join('')}</div>${accRow}
     <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
 }
 
