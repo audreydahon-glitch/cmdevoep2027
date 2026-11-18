@@ -282,8 +282,13 @@ window.addEventListener('resize', fit);
 async function boot() {
   fit();
   try {
-    const cfg = await (await fetch('/api/config', {cache: 'no-store'})).json();
-    if (cfg.error) throw new Error(cfg.error);
+    if (location.protocol === 'file:') throw new Error("Ce fichier ne s'ouvre pas en double-cliquant dessus : il fonctionne uniquement une fois mis en ligne sur Cloudflare Pages (voir le GUIDE, étapes 2 et 3), à l'adresse du type tableau-commandes.pages.dev.");
+    let res;
+    try { res = await fetch('/api/config', {cache: 'no-store'}); }
+    catch (e) { throw new Error("Impossible de joindre le serveur du site. Ouvrez l'outil depuis son adresse Cloudflare (tableau-commandes.pages.dev), pas depuis le fichier."); }
+    if (res.status === 404) throw new Error("Le dossier « functions » n'a pas été publié. Sur Cloudflare, le projet doit être relié à GitHub (Connect to Git), pas créé par glisser-déposer — voir le GUIDE, étape 3.");
+    const cfg = await res.json().catch(() => { throw new Error("Le dossier « functions » n'a pas été publié correctement (voir le GUIDE, étape 3)."); });
+    if (cfg.error) throw new Error(cfg.error + ' — dans Cloudflare : Settings → Variables and Secrets, puis Deployments → Retry deployment.');
     S.sb = supabase.createClient(cfg.url, cfg.anon);
   } catch (e) {
     $('#app').innerHTML = '<div class="login"><div class="lcard"><h1>Configuration</h1><p class="ko">' + esc(e.message || e) + '</p></div></div>';
@@ -662,24 +667,34 @@ function openCmd(id) {
   const d = document.createElement('div'); d.className = 'drawer';
   d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
     <div class="dbody">
-    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${inp('vendeur', 'Vendeur', 'text', '', 'dlv')}${inp('cession', 'Cession')}${inp('repreneur', 'Repreneur')}</div>`)}
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${inp('vendeur', 'Vendeur', 'text', '', 'dlv')}${inp('cession', 'Cession')}<div class="f"><label>Reprise</label><div class="seg" id="rep">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === !!r.reprise}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true')">${v}</button>`).join('')}</div></div></div>`)}
     ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT', 'number')}${inp('jours_stock', 'Nbre jour stock', 'number')}${inp('remise_ttc', 'Remise TTC', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle', 'number')}${inp('marge_vendeur', 'Marge HT vendeur', 'number')}${inp('marge_reelle', 'Marge réelle HT', 'number')}</div>`)}
-    ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('pack_liv', 'Pack liv 990')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbbee')}</div>`)}
-    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('reprise', 'Reprise')}${tg('annulation', 'Annulée', true)}</div>`)}
+    ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbbee')}</div>`)}
+    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('annulation', 'Annulée', true)}</div>`)}
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
     </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>`}${id && canParam(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
   d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); });
   document.body.appendChild(d);
+  const im = $('#cf').elements.immat;
+  if (im) im.addEventListener('input', () => { const v = fmtImmat(im.value); if (v !== im.value) { im.value = v; im.setSelectionRange(v.length, v.length); } });
   $('#cf').onsubmit = e => { e.preventDefault(); saveCmd(id, r.site); };
+}
+// Plaque au format AA-123-AA : tirets ajoutés automatiquement pendant la saisie
+function fmtImmat(v) {
+  const raw = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!/^[A-Z]{1,2}([0-9]{0,3}|[0-9]{3}[A-Z]{0,2})$/.test(raw)) return String(v || '').toUpperCase();
+  return [raw.slice(0, 2), raw.slice(2, 5), raw.slice(5, 7)].filter(Boolean).join('-');
 }
 function closeDrawer() { const d = $('.drawer'); if (d) d.remove(); renderMain(); }
 async function saveCmd(id, site) {
   const f = $('#cf'), o = {site};
   COLS.forEach(([k, , t]) => {
-    if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); o[k] = b ? b.getAttribute('aria-pressed') === 'true' : false; return; }
+    if (k === 'reprise') { const b = f.querySelector('#rep button[aria-pressed="true"]'); o[k] = !!b && b.textContent === 'Oui'; return; }
+    if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); if (b) o[k] = b.getAttribute('aria-pressed') === 'true'; return; }
     const el = f.elements[k]; if (!el) return;
+    if (k === 'immat') { o[k] = fmtImmat(el.value.trim()) || null; return; }
     let v = el.value.trim();
     if (t === 'eur' || t === 'int') o[k] = v === '' ? null : Number(v.replace(',', '.'));
     else if (t === 'date') o[k] = v || null;
