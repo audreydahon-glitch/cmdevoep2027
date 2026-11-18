@@ -266,7 +266,7 @@ const S = {
   sites: [], params: {}, obj: {}, rows: [], names: {},
   sel: null,            // {t:'site', s:'mb-villeneuve'} | {t:'grp', g:'MB'} | {t:'all'}
   tab: 'recap', year: new Date().getFullYear(), month: new Date().getMonth() + 1,
-  recapSec: 'cde', totSec: 'cde',
+  recapSec: null, totSec: null,   // détail masqué tant qu'on n'a pas cliqué sur un onglet
   f: {q: '', vend: '', mois: '', vue: 'toutes'},
   live: false,
 };
@@ -434,7 +434,7 @@ function render() {
     <div id="main"></div></div>`;
   renderMain();
 }
-function pick(t, v) { S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site' && S.tab === 'admin') S.tab = 'cmd'; render(); }
+function pick(t, v) { S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site') S.tab = 'cmd'; render(); }
 function go(t) { S.tab = t; renderMain(); }
 
 function renderMain() {
@@ -549,10 +549,10 @@ function tilesHtml(st) {
 // ---------- Récap d'un parc ----------
 function recapSite(site) {
   const st = stats([site], S.year);
-  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
+  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['am','Ventes AM']];
   const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>`;
-  return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec='${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
-    <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div><div style="overflow:auto">${recapTable(st, S.recapSec)}</div></div>`;
+  return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec=S.recapSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
+    <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div>${S.recapSec ? `<div style="overflow:auto">${recapTable(st, S.recapSec)}</div>` : ''}</div>`;
 }
 
 function vendRows(st) { return [...st.vl, ...(st.v.__NA ? ['__NA'] : [])]; }
@@ -610,10 +610,10 @@ function recapTotal() {
   const st = stats(sites, S.year);
   const per = sites.map(s => [s, stats([s], S.year)]);
   const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA financement'],['tfi','Taux FI']];
-  const K = S.totSec;
+  const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : x[K][m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
-  let t = `<table class="mx">${hdr(secs.find(s => s[0] === K)[1])}`;
+  let t = `<table class="mx">${hdr((secs.find(s => s[0] === K) || secs[0])[1])}`;
   per.forEach(([s, x]) => t += `<tr><td class="lab"><button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button></td>${[...Array(12)].map((_, i) => { const v = val(x, i + 1); return `<td class="${v ? '' : 'z'}">${f(v)}</td>`; }).join('')}<td class="tt">${f(val(x, 0))}</td></tr>`);
   t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
   if (K === 'cde' || K === 'liv' || K === 'marge') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om'}[K]], f);
@@ -623,8 +623,7 @@ function recapTotal() {
   per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
   syn += sl('Total', st, 'sub') + '</table>';
   return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>` + tilesHtml(st) +
-    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${K === s[0]}" onclick="S.totSec='${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div></div><div style="overflow:auto">${t}</div></div>
-     <div class="card"><div class="chead"><h3>Synthèse annuelle par parc</h3><span class="sub">cumul ${S.year}</span></div><div style="overflow:auto">${syn}</div></div>`;
+    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto">${syn}</div>` : ''}</div>`;
 }
 
 // ====================================================================
