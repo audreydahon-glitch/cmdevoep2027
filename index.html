@@ -549,7 +549,7 @@ function tilesHtml(st) {
 // ---------- Récap d'un parc ----------
 function recapSite(site) {
   const st = stats([site], S.year);
-  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['am','Ventes AM']];
+  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
   const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>`;
   return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec=S.recapSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
     <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div>${S.recapSec ? `<div style="overflow:auto">${recapTable(st, S.recapSec)}</div>` : ''}</div>`;
