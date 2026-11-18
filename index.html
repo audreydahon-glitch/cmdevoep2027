@@ -242,7 +242,7 @@ const COLS = [
   ['marge_vendeur','MARGE HT VENDEUR','eur','#C9C9C9'],['marge_reelle','MARGE REELLE HT','eur','#4472C4','#fff'],
   ['remise_ttc','REMISE TTC','eur','#8497B0','#fff'],['frais_admin','FRAIS ADMIN','bool','#C6E0B4'],['eurodatacar','EURODATACAR','bool','#C6E0B4'],
   ['pack_liv','PACK LIV 990','bool','#C6E0B4'],['coyote','COYOTE','bool','#ED7D31'],['protech','PROTECH','bool','#ED7D31'],
-  ['bulbbee','BULBBEE','bool','#ED7D31'],['annulation','ANNULATION','bool','#FF0000','#fff'],['date_fact','DATE DE FACTURE','date','#8EA9DB'],
+  ['bulbbee','BULBEE','bool','#ED7D31'],['annulation','ANNULATION','bool','#FF0000','#fff'],['date_fact','DATE DE FACTURE','date','#8EA9DB'],
   ['garantie','GARANTIE','gar','#70AD47'],['fi','FI','bool','#8EA9DB'],['ca_fin','CA FINANCEMENT','eur','#8EA9DB'],
   ['assurance','ASSURANCE','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],
   ['reprise','REPRISE','bool','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
@@ -252,6 +252,9 @@ const GCOLS = () => COLS.filter(c => !HIDE_GRID.includes(c[0]));
 const COLW = {date_cde:54,marque:70,modele:74,immat:66,client:90,vendeur:72,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:40,marge_prev:58,marge_vendeur:52,marge_reelle:52,remise_ttc:44,frais_admin:40,eurodatacar:52,pack_liv:32,coyote:46,protech:52,bulbbee:48,annulation:50,date_fact:54,garantie:66,fi:22,ca_fin:58,assurance:50,organisme:76,loa:26,reprise:46,commentaires:52};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
 const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
+// Base commune à tous les parcs (ajoutée automatiquement à la liste des vendeurs de chaque parc)
+const BASE_VEND = ['ALCOPA', 'MARCHAND', 'CESSION', 'DIRECTION'];
+const vendList = site => [...new Set([...(((S.params[site] || {}).vendeurs) || []), ...BASE_VEND])];
 const BOOLS = COLS.filter(c => c[2] === 'bool').map(c => c[0]);
 const NUMS = COLS.filter(c => c[2] === 'eur' || c[2] === 'int').map(c => c[0]);
 
@@ -343,7 +346,7 @@ async function start() {
   await loadAll();
   const mine = S.sites.filter(s => (S.me.sites || []).includes(s.slug));
   S.sel = mine.length ? {t: 'site', s: mine[0].slug} : {t: 'all'};
-  S.tab = me.role === 'assistante' ? 'cmd' : 'recap';
+  S.tab = 'cmd';
   render();
   subscribe();
 }
@@ -431,21 +434,23 @@ function render() {
     <div id="main"></div></div>`;
   renderMain();
 }
-function pick(t, v) { S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; render(); }
+function pick(t, v) { S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site' && S.tab === 'admin') S.tab = 'cmd'; render(); }
 function go(t) { S.tab = t; renderMain(); }
 
 function renderMain() {
   const m = $('#main'); if (!m) return;
   const site = S.sel.t === 'site' ? S.sel.s : null;
-  const tabs = [['recap', 'Récap']];
+  const tabs = [];
   if (site) {
     const n = S.rows.filter(r => r.site === site && ym(r.date_cde)[0] === S.year).length;
     tabs.push(['cmd', `Commandes VO <span class="b">${n}</span>`]);
+    tabs.push(['recap', 'Récap']);
     tabs.push(['param', 'Vendeurs & objectifs']);
     tabs.push(['hist', 'Historique']);
   }
+  else tabs.push(['recap', 'Récap']);
   if (S.me.role === 'admin') tabs.push(['admin', 'Administration']);
-  if (!tabs.some(t => t[0] === S.tab)) S.tab = 'recap';
+  if (!tabs.some(t => t[0] === S.tab)) S.tab = tabs[0][0];
   let h = `<div class="tabs">${tabs.map(t => `<button class="tab" aria-selected="${S.tab === t[0]}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}<span class="grow"></span></div>`;
   h += '<div id="body"></div>';
   m.innerHTML = h;
@@ -466,7 +471,7 @@ function stats(sites, year) {
   const z = () => Array(13).fill(0);
   const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z(),
     v: {}, org: {}, gar: {}, sites};
-  const vl = sites.length === 1 ? ((S.params[sites[0]] || {}).vendeurs || []) : [];
+  const vl = sites.length === 1 ? vendList(sites[0]) : [];
   const vk = name => { const k = (name || '').trim().toUpperCase(); return vl.includes(k) ? k : '__NA'; };
   const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z()});
   for (const r of S.rows) {
@@ -535,7 +540,7 @@ function tilesHtml(st) {
   else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
   const liv = st.liv[0];
   const A = [['Frais admin', st.fa[0], '#7aa95c'], ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Coyote', st.coy[0], '#ED7D31'],
-    ['Bulbbee', st.bul[0], '#d99a14'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes AM', st.am[0], '#8a6bc9']];
+    ['Bulbee', st.bul[0], '#d99a14'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes AM', st.am[0], '#8a6bc9']];
   const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des ${nf0.format(liv)} VO livrés</div></div>`; }).join('')}</div>`;
   return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
@@ -594,7 +599,7 @@ function recapTable(st, sec) {
     const gars = [...new Set([...((S.params[st.sites[0]] || {}).garanties || []), ...Object.keys(st.gar)])].filter(Boolean);
     return `<table class="mx">${hdr('Garanties (date facture)')}${gars.map(x => mrow(esc(x), st.gar[x] || Array(13).fill(0), fN)).join('')}${mrow('Sans garantie', st.gar[''] || Array(13).fill(0), fN)}${mrow('Total livré', st.liv, fN, 'sub')}</table>`;
   }
-  if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbbee')}${g('bul', fN)}${mrow('Total Bulbbee', st.bul, fN, 'sub')}${hdr('Frais admin')}${g('fa', fN)}${mrow('Total Frais admin', st.fa, fN, 'sub')}${hdr('Eurodatacar')}${g('edc', fN)}${mrow('Total Eurodatacar', st.edc, fN, 'sub')}${hdr('Reprises')}${g('rep', fN)}${mrow('Total Reprises', st.rep, fN, 'sub')}</table>`;
+  if (sec === 'acc') return `<table class="mx">${hdr('Coyote')}${g('coy', fN)}${mrow('Total Coyote', st.coy, fN, 'sub')}${hdr('Protech')}${g('pro', fN)}${mrow('Total Protech', st.pro, fN, 'sub')}${hdr('Bulbee')}${g('bul', fN)}${mrow('Total Bulbee', st.bul, fN, 'sub')}${hdr('Frais admin')}${g('fa', fN)}${mrow('Total Frais admin', st.fa, fN, 'sub')}${hdr('Eurodatacar')}${g('edc', fN)}${mrow('Total Eurodatacar', st.edc, fN, 'sub')}${hdr('Reprises')}${g('rep', fN)}${mrow('Total Reprises', st.rep, fN, 'sub')}</table>`;
   if (sec === 'am') return `<table class="mx">${hdr('Ventes AM')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
   return '';
 }
@@ -613,7 +618,7 @@ function recapTotal() {
   t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
   if (K === 'cde' || K === 'liv' || K === 'marge') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om'}[K]], f);
   t += '</table>';
-  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>Taux FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>CA financement</th><th>Coyote</th><th>Protech</th><th>Bulbbee</th></tr>`;
+  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>Taux FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>CA financement</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fE(x.caf[0])}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
   syn += sl('Total', st, 'sub') + '</table>';
@@ -643,7 +648,7 @@ function cmdFiltered(site) {
 function cmdView(site) {
   const edit = canEdit(site);
   const rows = cmdFiltered(site);
-  const vends = [...new Set([...((S.params[site] || {}).vendeurs || []), ...S.rows.filter(r => r.site === site).map(r => (r.vendeur || '').toUpperCase()).filter(Boolean)])];
+  const vends = [...new Set([...vendList(site), ...S.rows.filter(r => r.site === site).map(r => (r.vendeur || '').toUpperCase()).filter(Boolean)])];
   const vues = [['toutes', 'Toutes ' + S.year], ['mois', 'Commandes de ' + MOIS[S.month - 1].toLowerCase()], ['fact', 'Facturées en ' + MOIS[S.month - 1].toLowerCase()], ['nonfact', 'Non facturées'], ['annul', 'Annulées']];
   const cell = (c, r) => {
     const [k, , t] = c, v = r[k];
@@ -684,14 +689,20 @@ function openCmd(id) {
   const dl = (name, arr) => `<datalist id="${name}">${(arr || []).map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
   const inp = (k, lab, type, cls, list) => `<div class="f ${cls || ''}"><label>${lab}</label><input name="${k}" type="${type || 'text'}" ${type === 'number' ? 'step="any"' : ''} value="${esc(r[k] == null ? '' : r[k])}" ${list ? `list="${list}"` : ''} ${ro ? 'disabled' : ''}></div>`;
   const tg = (k, lab, red) => `<button type="button" class="tg ${red ? 'red' : ''}" data-k="${k}" aria-pressed="${!!r[k]}" ${ro ? 'disabled' : ''} onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">${lab}</button>`;
+  // Vendeur : menu déroulant alimenté par la liste du parc (onglet Vendeurs & objectifs)
+  const vsel = () => {
+    const list = vendList(r.site), cur = (r.vendeur || '').toUpperCase(), autre = !!cur && !list.includes(cur);
+    return `<div class="f"><label>Vendeur</label><select name="vendeur_sel" ${ro ? 'disabled' : ''} required onchange="const a=this.form.elements.vendeur_autre;a.hidden=this.value!=='__AUTRE';if(!a.hidden)a.focus()"><option value="">— Choisir —</option>${list.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('')}<option value="__AUTRE" ${autre ? 'selected' : ''}>Autre (saisir)…</option></select>
+      <input name="vendeur_autre" placeholder="Nom du vendeur" value="${autre ? esc(cur) : ''}" ${autre ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"></div>`;
+  };
   const yn = (id, lab, on) => `<div class="f"><label>${lab}</label><div class="seg" id="${id}">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === on}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true')">${v}</button>`).join('')}</div></div>`;
   const sec = (t, c, inner) => `<div class="fs"><h4><i style="background:${c}"></i>${t}</h4>${inner}</div>`;
   const d = document.createElement('div'); d.className = 'drawer';
   d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
     <div class="dbody">
-    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${inp('vendeur', 'Vendeur', 'text', '', 'dlv')}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${inp('marque', 'Marque', 'text', '', 'dlm')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
     ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT', 'number')}${inp('jours_stock', 'Nbre jour stock', 'number')}${inp('remise_ttc', 'Remise TTC', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle', 'number')}${inp('marge_vendeur', 'Marge HT vendeur', 'number')}${inp('marge_reelle', 'Marge réelle HT', 'number')}</div>`)}
-    ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbbee')}</div>`)}
+    ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbee')}</div>`)}
     ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('annulation', 'Annulée', true)}</div>`)}
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
@@ -715,6 +726,7 @@ async function saveCmd(id, site) {
   COLS.forEach(([k, , t]) => {
     if (k === 'reprise') { const b = f.querySelector('#rep button[aria-pressed="true"]'); o[k] = !!b && b.textContent === 'Oui'; return; }
     if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); if (b) o[k] = b.getAttribute('aria-pressed') === 'true'; return; }
+    if (k === 'vendeur') { const sv = f.elements.vendeur_sel.value; o[k] = (sv === '__AUTRE' ? f.elements.vendeur_autre.value.trim().toUpperCase() : sv) || null; return; }
     if (k === 'cession') { const b = f.querySelector('#ces button[aria-pressed="true"]'); o[k] = b && b.textContent === 'Oui' ? 'OUI' : null; return; }
     const el = f.elements[k]; if (!el) return;
     if (k === 'immat') { o[k] = fmtImmat(el.value.trim()) || null; return; }
@@ -723,6 +735,7 @@ async function saveCmd(id, site) {
     else if (t === 'date') o[k] = v || null;
     else o[k] = v === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat'].includes(k) ? v.toUpperCase() : v);
   });
+  if (!o.vendeur) { $('#dm').textContent = 'Choisissez ou saisissez le vendeur.'; return; }
   $('#dm').textContent = 'Enregistrement…';
   const q = id ? S.sb.from('tc_commandes').update(o).eq('id', id).select() : S.sb.from('tc_commandes').insert(o).select();
   const { data, error } = await q;
@@ -752,7 +765,7 @@ function paramView(site) {
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
     <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
-    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs / canaux</h4>${ta('vendeurs', p.vendeurs)}</div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
+    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}<p class="note">Toujours ajoutés pour tous les parcs : ${BASE_VEND.join(', ')}.</p></div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
 }
 async function saveObj(site) {
   const by = {};
@@ -941,7 +954,7 @@ function exportRecap() {
     ['FI', [...vv('fi'), ['TOTAL', st.fi]]],
     ['MARGE', [...vv('marge'), ['TOTAL', st.marge], ['OBJECTIF', st.om]]],
     ['CA FINANCEMENT', [...Object.entries(st.org).map(([o, a]) => [o || 'NON RENSEIGNÉ', a]), ['TOTAL', st.caf]]],
-    ['COYOTE', [...vv('coy'), ['TOTAL', st.coy]]], ['PROTECH', [...vv('pro'), ['TOTAL', st.pro]]], ['BULBBEE', [...vv('bul'), ['TOTAL', st.bul]]],
+    ['COYOTE', [...vv('coy'), ['TOTAL', st.coy]]], ['PROTECH', [...vv('pro'), ['TOTAL', st.pro]]], ['BULBEE', [...vv('bul'), ['TOTAL', st.bul]]],
     ['VENTES AM', [...vv('am'), ['TOTAL', st.am]]],
   ]);
   XLSX.writeFile(wb, `Recap VO ${siteObj(site).label} ${S.year}.xlsx`);
