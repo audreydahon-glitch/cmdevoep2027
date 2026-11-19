@@ -506,7 +506,7 @@ function stats(sites, year, ent) {
     if (yf === year && mf) {
       const v = V(k);
       if (!hv) out.liv[mf]++; v.liv[mf]++;
-      if (r.fi || r.loa || r.lld) { if (!hv) out.fi[mf]++; v.fi[mf]++; }   // dossier financé : crédit, LOA ou LLD
+      if (r.fi || r.loa || r.lld || N(r.ca_fin) > 0) { if (!hv) out.fi[mf]++; v.fi[mf]++; }   // dossier financé : crédit, LOA ou LLD
       out.marge[mf] += N(r.marge_reelle); v.marge[mf] += N(r.marge_reelle);
       if (!hv) out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
       const c = hv ? 0 : 1;   // les ventes hors volume ne comptent pas dans les totaux (comme le classeur)
@@ -542,44 +542,41 @@ function stats(sites, year, ent) {
 // Met en gras les chiffres d'un texte (ex. « objectif 600 · 85 % »)
 const boldNums = t => String(t).replace(/-?\d[\d\u202f\u00a0 ]*(?:[.,]\d+)?(?:\s?[%€])?/g, m => `<b>${m.trim()}</b> `).replace(/ $/, '');
 // ---------- Tuiles + bandeau du mois ----------
-function tilesHtml(st0) {
-  const m = S.month;
-  // Les tuiles et cartes sont cumulées de janvier au mois sélectionné (comparables à l'objectif à date)
-  const st = Object.assign({}, st0);
-  ['cde', 'liv', 'fi', 'marge', 'caf', 'coy', 'pro', 'bul', 'am', 'fa', 'edc', 'rep'].forEach(k => { st[k] = st0[k].slice(); st[k][0] = st0[k].slice(1, m + 1).reduce((x, y) => x + y, 0); });
+function tilesHtml(st) {
+  const m = S.month, mois = MOIS[m - 1].toLowerCase();
+  // Tuiles et cartes : chiffres du mois sélectionné face à l'objectif du mois. Bandeau du bas : cumul janvier → mois.
   const pct = (a, b) => b ? a / b : null;
   const bar = p => p == null ? '' : `<div class="bar2"><i class="${p >= 1 ? '' : 'ko'}" style="width:${Math.min(100, Math.round(p * 100))}%"></i></div>`;
-  const objTxt = (a, b, f) => b ? `objectif ${f(b)} · ${fP(a / b)}` : 'objectif non saisi';
-  const ytd = a => a.slice(1, m + 1).reduce((x, y) => x + y, 0);   // objectif cumulé de janvier au mois sélectionné
-  const oc = ytd(st.oc), ol = ytd(st.ol), om = ytd(st.om), ocaf = ytd(st.ocaf);
-  const oipv = st.oip.slice(1, m + 1).filter(Boolean), oip = oipv.length ? oipv.reduce((a, b) => a + b, 0) / oipv.length : 0;
-  const mo = (a, o, f) => o ? ` · obj. ${f(o)} (${fP(a / o)})` : '';
-  const tf = pct(st.fi[0], st.liv[0]);
-  const acc = st.coy[0] + st.pro[0] + st.bul[0];
+  const objTxt = (a, b, f) => b ? `objectif du mois ${f(b)} · ${fP(a / b)}` : 'objectif du mois non saisi';
+  const ytd = a => a.slice(1, m + 1).reduce((x, y) => x + y, 0);
+  const tf = pct(st.fi[m], st.liv[m]), oip = st.oip[m];
   const T = [
-    ['dark', 'Commandes', fN(st.cde[0]) , objTxt(st.cde[0], oc, fN), bar(pct(st.cde[0], oc))],
-    ['', 'VO livrés', fN(st.liv[0]), objTxt(st.liv[0], ol, fN), bar(pct(st.liv[0], ol))],
-    ['ac" style="--c:#5b3fb0', 'CA FI HT', fE(st.caf[0]), ocaf ? objTxt(st.caf[0], ocaf, fE) : `${nf0.format(st.fi[0])} dossiers financés`, ocaf ? bar(pct(st.caf[0], ocaf)) : ''],
-    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), oip ? `objectif ${fP(oip)} · ${nf0.format(st.fi[0])} financements` : `${nf0.format(st.fi[0])} financements`, oip && tf != null ? bar(tf / oip) : ''],
-    ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[0]), objTxt(st.marge[0], om, fE), bar(pct(st.marge[0], om))],
-    ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[0] ? fE(st.marge[0] / st.liv[0]) : '-', `sur ${nf0.format(st.liv[0])} VO livrés`, ''],
+    ['dark', 'Commandes', fN(st.cde[m]), objTxt(st.cde[m], st.oc[m], fN), bar(pct(st.cde[m], st.oc[m]))],
+    ['', 'VO livrés', fN(st.liv[m]), objTxt(st.liv[m], st.ol[m], fN), bar(pct(st.liv[m], st.ol[m]))],
+    ['ac" style="--c:#5b3fb0', 'CA FI HT', fE(st.caf[m]), st.ocaf[m] ? objTxt(st.caf[m], st.ocaf[m], fE) : `${nf0.format(st.fi[m])} dossiers financés`, st.ocaf[m] ? bar(pct(st.caf[m], st.ocaf[m])) : ''],
+    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), oip ? `objectif du mois ${fP(oip)} · ${nf0.format(st.fi[m])} financés / ${nf0.format(st.liv[m])}` : `${nf0.format(st.fi[m])} financés / ${nf0.format(st.liv[m])} livrés`, oip && tf != null ? bar(tf / oip) : ''],
+    ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[m]), objTxt(st.marge[m], st.om[m], fE), bar(pct(st.marge[m], st.om[m]))],
+    ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[m] ? fE(st.marge[m] / st.liv[m]) : '-', `sur ${nf0.format(st.liv[m])} VO livrés`, ''],
+  ];
+  const cu = (a, o, f) => o ? ` · obj. ${f(o)} (${fP(a / o)})` : '';
+  const c = k => ytd(st[k]);
+  const oipv = st.oip.slice(1, m + 1).filter(Boolean), oipc = oipv.length ? oipv.reduce((a, b) => a + b, 0) / oipv.length : 0;
+  const R = [
+    [fN(c('cde')), `commandes cumulées${cu(c('cde'), c('oc'), fN)}`],
+    [fN(c('liv')), `VO livrés cumulés${cu(c('liv'), c('ol'), fN)}`],
+    [fE(c('marge')), `de marge cumulée${cu(c('marge'), c('om'), fE)}`],
+    [fE(c('caf')), `CA FI HT cumulé${cu(c('caf'), c('ocaf'), fE)}`],
+    [fP(pct(c('fi'), c('liv'))), `IP FI cumulé${oipc ? ` · obj. ${fP(oipc)}` : ''}`],
   ];
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
-  const R = [
-    [fN(st.cde[m]), `commandes en ${MOIS[m - 1].toLowerCase()}${mo(st.cde[m], st.oc[m], fN)}`],
-    [fN(st.liv[m]), `VO livrés en ${MOIS[m - 1].toLowerCase()}${mo(st.liv[m], st.ol[m], fN)}`],
-    [fE(st.marge[m]), `de marge sur le mois${mo(st.marge[m], st.om[m], fE)}`],
-    [fE(st.caf[m]), `CA FI HT du mois${mo(st.caf[m], st.ocaf[m], fE)}`],
-    [fP(pct(st.fi[m], st.liv[m])), `IP FI du mois${st.oip[m] ? ` · obj. ${fP(st.oip[m])}` : ''}`],
-  ];
   if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
-  else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
-  const liv = st.liv[0];
-  const A = [['Frais admin', st.fa[0], '#7aa95c'], ['Eurodatacar', st.edc[0], '#4f9a8a'], ['Coyote', st.coy[0], '#ED7D31'],
-    ['Bulbee', st.bul[0], '#d99a14'], ['Reprises', st.rep[0], '#4472C4'], ['Ventes AM', st.am[0], '#8a6bc9']];
-  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div><div class="s">des ${nf0.format(liv)} VO livrés</div></div>`; }).join('')}</div>`;
+  else R.push([c('oc') ? fP(c('cde') / c('oc')) : '-', 'de l\'objectif commandes cumulé']);
+  const liv = st.liv[m];
+  const A = [['Frais admin', st.fa[m], '#7aa95c'], ['Eurodatacar', st.edc[m], '#4f9a8a'], ['Coyote', st.coy[m], '#ED7D31'],
+    ['Bulbee', st.bul[m], '#d99a14'], ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
+  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div></div>`; }).join('')}</div>`;
   return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
-    <div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
+    <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois}</div><div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
 }
 
 // ---------- Récap d'un parc ----------
@@ -590,7 +587,7 @@ function recapSite(site) {
   const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
   const sansEnt = S.ent ? S.rows.filter(r => r.site === site && !r.annulation && !r.entite && (ym(r.date_cde)[0] === S.year || ym(r.date_fact)[0] === S.year)).length : 0;
   const entBar = ents.length > 1 ? `<div class="seg" style="margin-bottom:12px">${[null, ...ents].map(e => `<button aria-pressed="${S.ent === e}" onclick="S.ent=${e ? `'${e}'` : 'null'};renderMain()">${e ? esc(e) : 'Global site'}</button>`).join('')}</div>${S.ent && sansEnt ? `<span class="note" style="margin-left:12px">${sansEnt} commande(s) sans entité ne sont pas comptées dans cette vue</span>` : ''}` : '';
-  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)}${S.ent ? ' · ' + esc(S.ent) : ''} · ${S.year}</h2><span class="sub">Cumul janvier → ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : mois de ${MOIS[S.month - 1].toLowerCase()}${S.ent ? ' · objectifs : vue Global' : ''}</span></div>` + entBar;
+  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)}${S.ent ? ' · ' + esc(S.ent) : ''} · ${S.year}</h2><span class="sub">Mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul janvier → ${MOIS[S.month - 1].toLowerCase()}${S.ent ? ' · objectifs : vue Global' : ''}</span></div>` + entBar;
   return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec=S.recapSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
     <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div>${S.recapSec ? `<div style="overflow:auto">${recapTable(st, S.recapSec)}</div>` : ''}</div>`;
 }
@@ -685,8 +682,8 @@ function recapTotal() {
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
   syn += sl('Total', st, 'sub') + '</table>';
-  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · cumul janvier → ${MOIS[S.month - 1].toLowerCase()} ${S.year}</span></div>` + tilesHtml(st) +
-    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto">${syn}</div>` : ''}</div>`;
+  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul</span></div>` + tilesHtml(st) +
+    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div><button class="btn" onclick="exportTotal()">Exporter ${esc(selLabel())} en Excel</button></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto">${syn}</div>` : ''}</div>`;
 }
 
 // ====================================================================
@@ -1029,6 +1026,36 @@ function exportCmd(site) {
   
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'VO');
   XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label} ${S.year}.xlsx`);
+}
+// Export d'un total (concession ou Plaque EP) : synthèse, tableaux mensuels par parc et toutes les commandes
+function exportTotal() {
+  const sites = selSites(), wb = XLSX.utils.book_new(), y = S.year;
+  const per = sites.map(x => [siteObj(x).label, stats([x], y)]), tot = stats(sites, y);
+  const r0 = v => Math.round(v * 100) / 100, ipv = (a, b) => b ? r0(a / b) : null;
+  // 1. Synthèse annuelle
+  const syn = [['PARC', 'COMMANDES', 'OBJ. CDE', '% CDE', 'VO LIVRÉS', 'OBJ. LIV', 'FI', 'CA FI HT', 'OBJ. CA FI HT', 'IP FI', 'MARGE RÉELLE HT', 'OBJ. MARGE', '% MARGE', 'MARGE MOY./VO', 'FRAIS ADMIN', 'EURODATACAR', 'COYOTE', 'PROTECH', 'BULBEE', 'REPRISES', 'VENTES AM']];
+  const line = (lab, x) => [lab, x.cde[0], x.oc[0] || null, ipv(x.cde[0], x.oc[0]), x.liv[0], x.ol[0] || null, x.fi[0], Math.round(x.caf[0]), x.ocaf[0] || null, ipv(x.fi[0], x.liv[0]), Math.round(x.marge[0]), x.om[0] || null, ipv(x.marge[0], x.om[0]), x.liv[0] ? Math.round(x.marge[0] / x.liv[0]) : null, x.fa[0], x.edc[0], x.coy[0], x.pro[0], x.bul[0], x.rep[0], x.am[0]];
+  per.forEach(([l, x]) => syn.push(line(l, x)));
+  syn.push(line('TOTAL ' + selLabel().toUpperCase(), tot));
+  const ws0 = XLSX.utils.aoa_to_sheet(syn); ws0['!cols'] = syn[0].map((h, i) => ({wch: i ? 13 : 30}));
+  XLSX.utils.book_append_sheet(wb, ws0, 'SYNTHESE ' + y);
+  // 2. Tableaux mensuels par parc
+  const M = [['COMMANDES', x => x.cde], ['LIVRES', x => x.liv], ['FI', x => x.fi], ['IP FI', x => x.liv.map((v, i) => ipv(x.fi[i], v))], ['MARGE', x => x.marge.map(Math.round)], ['CA FI HT', x => x.caf.map(Math.round)]];
+  M.forEach(([name, f]) => {
+    const aoa = [['PARC', ...MOIS.map(m => m.toUpperCase()), name === 'IP FI' ? 'ANNÉE' : 'TOTAL']];
+    per.forEach(([l, x]) => { const a = f(x); aoa.push([l, ...a.slice(1), a[0]]); });
+    const a = f(tot); aoa.push(['TOTAL', ...a.slice(1), a[0]]);
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((h, i) => ({wch: i ? 11 : 30}));
+    XLSX.utils.book_append_sheet(wb, ws, name + ' PAR MOIS');
+  });
+  // 3. Toutes les commandes de l'année (une ligne par commande, avec le parc)
+  const GC = GCOLS();
+  const rows = S.rows.filter(r => sites.includes(r.site) && (ym(r.date_cde)[0] === y || ym(r.date_fact)[0] === y)).sort((a, b) => (a.site + (a.date_cde || '')).localeCompare(b.site + (b.date_cde || '')));
+  const aoa = [['PARC', ...GC.map(c => c[1])]];
+  rows.forEach(r => aoa.push([siteObj(r.site).label, ...GC.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])]));
+  const wsc = XLSX.utils.aoa_to_sheet(aoa, {cellDates: true}); wsc['!cols'] = [{wch: 28}, ...GC.map(c => ({wpx: COLW[c[0]] + 14}))];
+  XLSX.utils.book_append_sheet(wb, wsc, 'LISTE DES COMMANDES');
+  XLSX.writeFile(wb, `Recap VO ${selLabel()} ${y}.xlsx`);
 }
 function exportRecap() {
   const site = S.sel.s, st = stats([site], S.year, S.ent), wb = XLSX.utils.book_new();
