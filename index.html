@@ -128,6 +128,21 @@ body.narrow .ach{grid-template-columns:1fr}
 .act i{display:block;height:100%;border-radius:6px}
 .act em{position:absolute;top:-3px;bottom:-3px;width:2px;background:#0e1a2b;opacity:.55;z-index:1}
 .acv{text-align:right;font-weight:800}.acx{text-align:right;color:var(--muted);font-size:11.5px;white-space:nowrap}
+.ach2{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 20px 18px}
+body.narrow .ach2{grid-template-columns:1fr}
+.acr.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px}.acr.tot .acn{font-weight:800}.acr.tot .act{background:none}
+.acx b.ok{color:var(--pos)}.acx b.ko{color:var(--neg)}
+.evo{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;height:290px;padding-top:6px}
+.evc{display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.evv{font-size:10.5px;font-weight:700;text-align:center;color:var(--ink2);height:16px;white-space:nowrap;overflow:visible}
+.evb{position:relative;flex:1;display:flex;align-items:flex-end;background:#f6f8fb;border-radius:6px}
+.evb i{display:block;width:100%;border-radius:6px 6px 2px 2px}
+.evb em{position:absolute;left:-2px;right:-2px;height:2px;background:#0e1a2b;opacity:.6;z-index:1}
+.evm{font-size:10.5px;text-align:center;color:var(--muted);font-weight:700;margin-top:4px}
+.evc.cur .evm{color:var(--ink)}
+.ach2 .acr{grid-template-columns:minmax(150px,200px) 1fr 104px 118px}
+.acn .lnk{display:inline-block;max-width:calc(100% - 22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;text-align:left;font-weight:600}
+.ach2 .acv{white-space:nowrap}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
 .chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
 
@@ -305,13 +320,13 @@ const COLS = [
   ['remise_ttc','REMISE TTC','eur','#8497B0','#fff'],['frais_admin','FRAIS ADMIN','bool','#C6E0B4'],['eurodatacar','EURODATACAR','bool','#C6E0B4'],
   ['pack_liv','PACK LIV 990','bool','#C6E0B4'],['coyote','COYOTE','bool','#ED7D31'],['protech','PROTECH','bool','#ED7D31'],
   ['bulbbee','BULBEE','bool','#ED7D31'],['annulation','ANNULATION','bool','#FF0000','#fff'],['date_fact','DATE DE FACTURE','date','#8EA9DB'],
-  ['garantie','GARANTIE','gar','#70AD47'],['fi','CRÉDIT','bool','#8EA9DB'],['ca_fin','CA FI HT','eur','#8EA9DB'],
-  ['assurance','ASSURANCE','bool','#8EA9DB'],['ass_pf','PERTE FI','bool','#8EA9DB'],['ass_deces','DÉCÈS','bool','#8EA9DB'],['ass_extgar','EXT. GAR.','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],['lld','LLD','bool','#8EA9DB'],
+  ['garantie','GARANTIE','gar','#70AD47'],['fi','CRÉDIT','bool','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],['lld','LLD','bool','#8EA9DB'],['ca_fin','CA FI HT','eur','#8EA9DB'],
+  ['assurance','ASSURANCE','bool','#8EA9DB'],['ass_pf','PERTE FI','bool','#8EA9DB'],['ass_deces','DÉCÈS','bool','#8EA9DB'],['ass_extgar','EXT. GAR.','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],
   ['reprise','REPRISE','bool','#FFFF00'],['depot','DÉPÔT','text','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
 ];
 // Ordre des colonnes du classeur Excel (A → AD), utilisé pour l'import
 const XL_ORDER = ['date_cde','marque','modele','immat','client','vendeur','cession','repreneur','prix_vente_ht','jours_stock','marge_prev','marge_vendeur','marge_reelle','remise_ttc','frais_admin','eurodatacar','pack_liv','coyote','protech','bulbbee','annulation','date_fact','garantie','fi','ca_fin','assurance','organisme','loa','reprise','commentaires'];
-const HIDE_GRID = ['repreneur', 'assurance', 'depot', 'pack_liv'];   // colonnes conservées en base mais retirées de l'affichage
+const HIDE_GRID = ['repreneur', 'assurance', 'depot', 'pack_liv', 'commentaires'];   // colonnes conservées en base mais retirées de l'affichage
 const GCOLS = site => COLS.filter(c => !HIDE_GRID.includes(c[0]) && !(site && c[0] === 'entite' && !entList(site).length));   // pas de colonne Entité sur les parcs mono-entité
 const COLW = {date_cde:50,entite:50,marque:70,modele:60,immat:60,client:64,vendeur:64,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:36,marge_prev:50,marge_vendeur:52,marge_reelle:52,remise_ttc:40,frais_admin:40,eurodatacar:44,pack_liv:28,coyote:46,protech:50,bulbbee:48,annulation:46,date_fact:54,garantie:54,fi:42,ca_fin:52,assurance:46,organisme:58,loa:26,reprise:46,commentaires:32,ass_pf:36,ass_deces:38,ass_extgar:32,lld:26};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
@@ -510,6 +525,7 @@ function render() {
   renderMain();
 }
 function pick(t, v) { S.ent = null; S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site') S.tab = 'cmd'; render(); }
+function pickRecap(s) { S.ent = null; S.sel = {t: 'site', s}; S.tab = 'recap'; S.recapSec = null; render(); window.scrollTo(0, 0); }
 function go(t) { S.tab = t; renderMain(); }
 
 function renderMain() {
@@ -730,7 +746,7 @@ function recapTable(st, sec) {
 // ---------- Récap concession / Plaque ----------
 // ---------- Présentation des tableaux des totaux (Plaque EP, Total MB…) ----------
 const GRP_COL = {'MB': '#4a5568', 'FMC / NSA': '#d9661c', 'GVA': '#3a63ad'};
-const parcLab = s => { const o = siteObj(s); return `<span class="pdot" style="background:${GRP_COL[o.grp] || '#8792a6'}"></span><button class="lnk" onclick="pick('site','${s}')">${esc(o.label)}</button>`; };
+const parcLab = s => { const o = siteObj(s); return `<span class="pdot" style="background:${GRP_COL[o.grp] || '#8792a6'}"></span><button class="lnk" onclick="pickRecap('${s}')">${esc(o.label)}</button>`; };
 function pzHead(title, sub, col, kpis) {
   return `<div class="pzh" style="--a:${col}"><div><div class="pzt">${title} <span>· ${esc(selLabel())} ${S.year}</span></div>${sub ? `<div class="pzs">${sub}</div>` : ''}</div><div class="pzk">${kpis.map(([l, v, c]) => `<div><div class="kl">${l}</div><div class="kv ${c || ''}">${v}</div></div>`).join('')}</div></div>`;
 }
@@ -746,6 +762,34 @@ function accCharts(per) {
     return `<div class="acg" style="--c:${COLA[k]}"><div class="acgh"><b>${lab}</b>${sd != null ? `<span>objectif IP ${Math.round(sd * 100)} %</span>` : ''}</div>
       ${rows.map(([s, n, l, p], i) => { const col = p == null ? '#c3cad6' : sd == null ? COLA[k] : p >= sd ? '#2e9a5b' : '#d0453a';
         return `<div class="acr"><div class="acn"><span class="rk">${i + 1}</span>${esc(siteObj(s).label)}</div><div class="act">${sd != null ? `<em style="left:${(100 * sd / sc).toFixed(1)}%"></em>` : ''}<i style="width:${p == null ? 0 : (100 * p / sc).toFixed(1)}%;background:${col}"></i></div><div class="acv" style="color:${p == null ? 'var(--muted)' : col}">${p == null ? '-' : fP(p)}</div><div class="acx">${l ? `${nf0.format(n)} / ${nf0.format(l)}` : '0 livré'}</div></div>`; }).join('')}</div>`; }).join('')}</div>`;
+}
+// Graphiques des totaux : classement des parcs + évolution mensuelle, sur le mois ou le cumul janvier → mois
+function itemCharts(K, per, st, f, title) {
+  const m = S.month, cum = S.accPer !== 'mois', mo = MOIS[m - 1].toLowerCase();
+  const COL = {cde: '#3a63ad', liv: '#2b8cb0', marge: '#c0392b', caf: '#5b3fb0', tfi: '#2e7d4f', am: '#8a6bc9'}[K];
+  const OK = {cde: 'oc', liv: 'ol', marge: 'om', caf: 'ocaf', tfi: 'oip'}[K];
+  const sum = a => cum ? a.slice(1, m + 1).reduce((x, y) => x + y, 0) : a[m];
+  const avgO = a => { if (!cum) return a[m] || 0; const v = a.slice(1, m + 1).filter(Boolean); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : 0; };
+  const V = x => K === 'tfi' ? (sum(x.liv) ? sum(x.fi) / sum(x.liv) : null) : sum(x[K]);
+  const O = x => !OK ? 0 : K === 'tfi' ? avgO(x.oip) : sum(x[OK]);
+  const det = x => K === 'tfi' ? (sum(x.liv) ? `${nf0.format(sum(x.fi))} / ${nf0.format(sum(x.liv))}` : '0 livré') : (O(x) ? `obj. ${f(O(x))}` : '');
+  const rows = per.map(([s, x]) => [s, V(x), O(x), det(x)]).sort((a, b) => (b[1] ?? -1) - (a[1] ?? -1));
+  const sc = Math.max(K === 'tfi' ? 0.5 : 1, ...rows.map(r => Math.max(r[1] || 0, r[2] || 0)));
+  const colOf = (v, o) => v == null ? '#c3cad6' : K === 'tfi' ? (v >= (o || 0.4) ? '#2e9a5b' : '#d0453a') : o ? (v >= o ? '#2e9a5b' : '#d0453a') : '#6f86ad';   // gris-bleu quand pas d'objectif
+  const tv = V(st), to = O(st);
+  const rank = `<div class="acg" style="--c:${COL}"><div class="acgh"><b>Classement des parcs</b><span>${cum ? 'cumul janvier → ' + mo : 'mois de ' + mo}</span></div>
+    ${rows.map(([s, v, o, d], i) => { const c = colOf(v, o); return `<div class="acr"><div class="acn"><span class="rk">${i + 1}</span><button class="lnk" style="color:var(--ink)" onclick="pickRecap('${s}')">${esc(siteObj(s).label)}</button></div><div class="act">${o ? `<em style="left:${(100 * Math.min(o, sc) / sc).toFixed(1)}%"></em>` : ''}<i style="width:${v == null ? 0 : (100 * v / sc).toFixed(1)}%;background:${c}"></i></div><div class="acv" style="color:${v == null ? 'var(--muted)' : c}">${v == null ? '-' : f(v)}</div><div class="acx">${d}</div></div>`; }).join('')}
+    <div class="acr tot"><div class="acn">Total ${esc(selLabel())}</div><div></div><div class="acv">${tv == null ? '-' : f(tv)}</div><div class="acx">${to ? `obj. ${f(to)} · <b class="${(tv || 0) >= to ? 'ok' : 'ko'}">${fP((tv || 0) / to)}</b>` : ''}</div></div></div>`;
+  // Évolution mensuelle du total (barres) avec l'objectif du mois (trait)
+  const mv = [...Array(12)].map((_, i) => K === 'tfi' ? (st.liv[i + 1] ? st.fi[i + 1] / st.liv[i + 1] : null) : st[K][i + 1]);
+  const mobj = [...Array(12)].map((_, i) => OK ? st[OK][i + 1] : 0);
+  const msc = Math.max(K === 'tfi' ? 0.5 : 1, ...mv.map(v => v || 0), ...mobj);
+  const evo = `<div class="acg" style="--c:${COL}"><div class="acgh"><b>Évolution mensuelle</b><span>total ${esc(selLabel())} ${S.year}${OK ? ' · trait : objectif du mois' : ''}</span></div>
+    <div class="evo">${mv.map((v, i) => { const o = mobj[i], c = i + 1 > m ? '#dfe4ec' : colOf(v, o); return `<div class="evc${i + 1 === m ? ' cur' : ''}"><div class="evv">${v == null || (!v && i + 1 > m) ? '' : f === fE ? (Math.abs(v) >= 1000 ? nf0.format(Math.round(v / 1000)) + ' k€' : f(v)) : f(v)}</div><div class="evb">${o ? `<em style="bottom:${(100 * o / msc).toFixed(1)}%"></em>` : ''}<i style="height:${v == null ? 0 : (100 * v / msc).toFixed(1)}%;background:${c}"></i></div><div class="evm">${MOIS_C[i]}</div></div>`; }).join('')}</div></div>`;
+  const tog = `<div class="seg" style="margin:14px 20px 0">${[['mois', 'Mois de ' + mo], ['cum', 'Cumul janvier → ' + mo]].map(([k, l]) => `<button aria-pressed="${(S.accPer === 'mois') === (k === 'mois')}" onclick="S.accPer='${k}';renderMain()">${l}</button>`).join('')}</div>`;
+  const kp = [[cum ? 'Cumul' : 'Mois', tv == null ? '-' : f(tv)]];
+  if (to) kp.push(['Objectif', f(to)], ['Réalisation', fP((tv || 0) / to), (tv || 0) >= to ? 'ok' : 'ko']);
+  return `<div class="pz">${pzHead(title, '', COL, kp)}${tog}<div class="ach2">${rank}${evo}</div></div>`;
 }
 function presTable(K, per, st, f, val, title) {
   const COL = {cde: '#3a63ad', liv: '#2b8cb0', marge: '#c0392b', caf: '#5b3fb0', tfi: '#2e7d4f', am: '#8a6bc9'}[K] || '#1d3557';
@@ -789,7 +833,7 @@ function recapTotal() {
   const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : (x[K] || [])[m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
-  const t = K === 'acc' ? '' : presTable(K, per, st, f, val, (secs.find(s => s[0] === K) || secs[0])[1]);
+  const t = K === 'acc' ? '' : itemCharts(K, per, st, f, (secs.find(s => s[0] === K) || secs[0])[1]);
   const mo = MOIS[S.month - 1].toLowerCase();
   const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', '', '#d9661c', [])}<div class="seg" style="margin:14px 20px 0">${[['mois', 'Mois de ' + mo], ['cum', 'Cumul janvier → ' + mo]].map(([k, l]) => `<button aria-pressed="${(S.accPer === 'mois') === (k === 'mois')}" onclick="S.accPer='${k}';renderMain()">${l}</button>`).join('')}</div>${accCharts(per)}</div>` : '';
   let syn = `<table class="mx pres"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
