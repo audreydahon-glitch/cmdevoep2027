@@ -254,13 +254,15 @@ const COLS = [
   ['remise_ttc','REMISE TTC','eur','#8497B0','#fff'],['frais_admin','FRAIS ADMIN','bool','#C6E0B4'],['eurodatacar','EURODATACAR','bool','#C6E0B4'],
   ['pack_liv','PACK LIV 990','bool','#C6E0B4'],['coyote','COYOTE','bool','#ED7D31'],['protech','PROTECH','bool','#ED7D31'],
   ['bulbbee','BULBEE','bool','#ED7D31'],['annulation','ANNULATION','bool','#FF0000','#fff'],['date_fact','DATE DE FACTURE','date','#8EA9DB'],
-  ['garantie','GARANTIE','gar','#70AD47'],['fi','FI','bool','#8EA9DB'],['ca_fin','CA FINANCEMENT','eur','#8EA9DB'],
-  ['assurance','ASSURANCE','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],
+  ['garantie','GARANTIE','gar','#70AD47'],['fi','CRÉDIT','bool','#8EA9DB'],['ca_fin','CA FI HT','eur','#8EA9DB'],
+  ['assurance','ASSURANCE','bool','#8EA9DB'],['ass_pf','PERTE FI','bool','#8EA9DB'],['ass_deces','DÉCÈS','bool','#8EA9DB'],['ass_extgar','EXT. GAR.','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],['lld','LLD','bool','#8EA9DB'],
   ['reprise','REPRISE','bool','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
 ];
-const HIDE_GRID = ['repreneur'];   // colonnes conservées en base mais retirées de l'affichage
+// Ordre des colonnes du classeur Excel (A → AD), utilisé pour l'import
+const XL_ORDER = ['date_cde','marque','modele','immat','client','vendeur','cession','repreneur','prix_vente_ht','jours_stock','marge_prev','marge_vendeur','marge_reelle','remise_ttc','frais_admin','eurodatacar','pack_liv','coyote','protech','bulbbee','annulation','date_fact','garantie','fi','ca_fin','assurance','organisme','loa','reprise','commentaires'];
+const HIDE_GRID = ['repreneur', 'assurance'];   // colonnes conservées en base mais retirées de l'affichage
 const GCOLS = () => COLS.filter(c => !HIDE_GRID.includes(c[0]));
-const COLW = {date_cde:54,entite:50,marque:70,modele:74,immat:66,client:80,vendeur:72,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:40,marge_prev:54,marge_vendeur:52,marge_reelle:52,remise_ttc:44,frais_admin:40,eurodatacar:48,pack_liv:32,coyote:46,protech:48,bulbbee:48,annulation:46,date_fact:54,garantie:62,fi:22,ca_fin:58,assurance:46,organisme:70,loa:26,reprise:46,commentaires:44};
+const COLW = {date_cde:50,entite:50,marque:70,modele:60,immat:60,client:64,vendeur:64,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:36,marge_prev:50,marge_vendeur:52,marge_reelle:52,remise_ttc:40,frais_admin:40,eurodatacar:44,pack_liv:28,coyote:46,protech:50,bulbbee:48,annulation:46,date_fact:54,garantie:54,fi:42,ca_fin:52,assurance:46,organisme:58,loa:26,reprise:46,commentaires:32,ass_pf:36,ass_deces:38,ass_extgar:32,lld:26};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
 const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
 // Base commune à tous les parcs (ajoutée automatiquement à la liste des vendeurs de chaque parc)
@@ -504,7 +506,7 @@ function stats(sites, year, ent) {
     if (yf === year && mf) {
       const v = V(k);
       if (!hv) out.liv[mf]++; v.liv[mf]++;
-      if (r.fi) { if (!hv) out.fi[mf]++; v.fi[mf]++; }
+      if (r.fi || r.loa || r.lld) { if (!hv) out.fi[mf]++; v.fi[mf]++; }   // dossier financé : crédit, LOA ou LLD
       out.marge[mf] += N(r.marge_reelle); v.marge[mf] += N(r.marge_reelle);
       if (!hv) out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
       const c = hv ? 0 : 1;   // les ventes hors volume ne comptent pas dans les totaux (comme le classeur)
@@ -524,12 +526,15 @@ function stats(sites, year, ent) {
   Object.values(out.v).forEach(v => Object.keys(v).forEach(k => v[k][0] = sum(v[k])));
   Object.values(out.org).forEach(a => a[0] = sum(a)); Object.values(out.gar).forEach(a => a[0] = sum(a));
   // Objectifs
-  out.oc = z(); out.ol = z(); out.om = z();
+  out.oc = z(); out.ol = z(); out.om = z(); out.ocaf = z(); out.oip = z(); const nip = z();
   if (!ent) for (const s of sites) for (let m = 1; m <= 12; m++) {   // objectifs : au niveau du parc (vue Global)
     const o = S.obj[s + '|' + year + '|' + m]; if (!o) continue;
-    out.oc[m] += N(o.cde); out.ol[m] += N(o.liv); out.om[m] += N(o.marge);
+    out.oc[m] += N(o.cde); out.ol[m] += N(o.liv); out.om[m] += N(o.marge); out.ocaf[m] += N(o.caf);
+    if (o.ipfi != null && o.ipfi !== '') { out.oip[m] += N(o.ipfi) / 100; nip[m]++; }
   }
-  ['oc','ol','om'].forEach(k => out[k][0] = sum(out[k]));
+  ['oc','ol','om','ocaf'].forEach(k => out[k][0] = sum(out[k]));
+  for (let m = 1; m <= 12; m++) out.oip[m] = nip[m] ? out.oip[m] / nip[m] : 0;   // IP FI : moyenne des parcs
+  { const v = out.oip.slice(1).filter(Boolean); out.oip[0] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; }
   out.vl = vl;
   return out;
 }
@@ -546,15 +551,16 @@ function tilesHtml(st0) {
   const bar = p => p == null ? '' : `<div class="bar2"><i class="${p >= 1 ? '' : 'ko'}" style="width:${Math.min(100, Math.round(p * 100))}%"></i></div>`;
   const objTxt = (a, b, f) => b ? `objectif ${f(b)} · ${fP(a / b)}` : 'objectif non saisi';
   const ytd = a => a.slice(1, m + 1).reduce((x, y) => x + y, 0);   // objectif cumulé de janvier au mois sélectionné
-  const oc = ytd(st.oc), ol = ytd(st.ol), om = ytd(st.om);
+  const oc = ytd(st.oc), ol = ytd(st.ol), om = ytd(st.om), ocaf = ytd(st.ocaf);
+  const oipv = st.oip.slice(1, m + 1).filter(Boolean), oip = oipv.length ? oipv.reduce((a, b) => a + b, 0) / oipv.length : 0;
   const mo = (a, o, f) => o ? ` · obj. ${f(o)} (${fP(a / o)})` : '';
   const tf = pct(st.fi[0], st.liv[0]);
   const acc = st.coy[0] + st.pro[0] + st.bul[0];
   const T = [
     ['dark', 'Commandes', fN(st.cde[0]) , objTxt(st.cde[0], oc, fN), bar(pct(st.cde[0], oc))],
     ['', 'VO livrés', fN(st.liv[0]), objTxt(st.liv[0], ol, fN), bar(pct(st.liv[0], ol))],
-    ['ac" style="--c:#5b3fb0', 'CA financement', fE(st.caf[0]), `${nf0.format(st.fi[0])} dossiers financés`, ''],
-    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), `${nf0.format(st.fi[0])} financements`, ''],
+    ['ac" style="--c:#5b3fb0', 'CA FI HT', fE(st.caf[0]), ocaf ? objTxt(st.caf[0], ocaf, fE) : `${nf0.format(st.fi[0])} dossiers financés`, ocaf ? bar(pct(st.caf[0], ocaf)) : ''],
+    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), oip ? `objectif ${fP(oip)} · ${nf0.format(st.fi[0])} financements` : `${nf0.format(st.fi[0])} financements`, oip && tf != null ? bar(tf / oip) : ''],
     ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[0]), objTxt(st.marge[0], om, fE), bar(pct(st.marge[0], om))],
     ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[0] ? fE(st.marge[0] / st.liv[0]) : '-', `sur ${nf0.format(st.liv[0])} VO livrés`, ''],
   ];
@@ -563,8 +569,8 @@ function tilesHtml(st0) {
     [fN(st.cde[m]), `commandes en ${MOIS[m - 1].toLowerCase()}${mo(st.cde[m], st.oc[m], fN)}`],
     [fN(st.liv[m]), `VO livrés en ${MOIS[m - 1].toLowerCase()}${mo(st.liv[m], st.ol[m], fN)}`],
     [fE(st.marge[m]), `de marge sur le mois${mo(st.marge[m], st.om[m], fE)}`],
-    [fE(st.caf[m]), 'CA financement du mois'],
-    [fP(pct(st.fi[m], st.liv[m])), 'IP FI du mois'],
+    [fE(st.caf[m]), `CA FI HT du mois${mo(st.caf[m], st.ocaf[m], fE)}`],
+    [fP(pct(st.fi[m], st.liv[m])), `IP FI du mois${st.oip[m] ? ` · obj. ${fP(st.oip[m])}` : ''}`],
   ];
   if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
   else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
@@ -628,12 +634,13 @@ function recapTable(st, sec) {
     let t2 = `<table class="mx" style="margin-top:6px">${hdr('IP FI (FI / VO livrés)', 'ANNÉE')}`;
     V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; t2 += prow(vlab(v), ip(x.fi || Array(13).fill(0), x.liv || Array(13).fill(0)), v === '__NA' ? 'na' : ''); });
     t2 += prow('IP FI du parc', ip(st.fi, st.liv), 'sub');
+    t2 += `<tr class="obj"><td class="lab">Objectif IP FI</td>${st.oip.slice(1).map(v => `<td>${v ? fP(v) : '-'}</td>`).join('')}<td class="tt">${st.oip[0] ? fP(st.oip[0]) : '-'}</td></tr>`;
     return h + t2 + '</table>';
   }
   if (sec === 'fin') {
     const orgs = [...new Set([...((S.params[st.sites[0]] || {}).organismes || []), ...Object.keys(st.org)])].filter(Boolean);
-    return `<table class="mx">${hdr('CA financement par organisme')}${orgs.map(o => mrow(esc(o), st.org[o] || Array(13).fill(0), fE)).join('')}${st.org[''] ? mrow('Organisme non renseigné', st.org[''], fE, 'na') : ''}${mrow('Total', st.caf, fE, 'sub')}
-      ${hdr('CA financement par vendeur')}${g('caf', fE, false)}${mrow('Total', st.caf, fE, 'sub')}</table>`;
+    return `<table class="mx">${hdr('CA FI HT par organisme')}${orgs.map(o => mrow(esc(o), st.org[o] || Array(13).fill(0), fE)).join('')}${st.org[''] ? mrow('Organisme non renseigné', st.org[''], fE, 'na') : ''}${mrow('Total', st.caf, fE, 'sub')}${objRows(st.caf, st.ocaf, fE)}
+      ${hdr('CA FI HT par vendeur')}${g('caf', fE, false)}${mrow('Total', st.caf, fE, 'sub')}</table>`;
   }
   if (sec === 'gar') {
     const gars = [...new Set([...((S.params[st.sites[0]] || {}).garanties || []), ...Object.keys(st.gar)])].filter(Boolean);
@@ -665,16 +672,16 @@ function recapTotal() {
   const sites = selSites();
   const st = stats(sites, S.year);
   const per = sites.map(s => [s, stats([s], S.year)]);
-  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA financement'],['tfi','IP FI']];
+  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA FI HT'],['tfi','IP FI']];
   const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : x[K][m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
   let t = `<table class="mx">${hdr((secs.find(s => s[0] === K) || secs[0])[1])}`;
   per.forEach(([s, x]) => t += `<tr><td class="lab"><button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button></td>${[...Array(12)].map((_, i) => { const v = val(x, i + 1); return `<td class="${v ? '' : 'z'}">${f(v)}</td>`; }).join('')}<td class="tt">${f(val(x, 0))}</td></tr>`);
   t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
-  if (K === 'cde' || K === 'liv' || K === 'marge') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om'}[K]], f);
+  if (K === 'cde' || K === 'liv' || K === 'marge' || K === 'caf') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om', caf: 'ocaf'}[K]], f);
   t += '</table>';
-  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA financement</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
+  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
   syn += sl('Total', st, 'sub') + '</table>';
@@ -760,7 +767,7 @@ function openCmd(id) {
     ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${entList(r.site).length ? lsel('entite', 'Entité', entList(r.site), 'Entité', true) : ''}${lsel('marque', 'Marque', marqList(r.site), 'Marque')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
     ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT (€)', 'number')}${inp('jours_stock', 'Nbre jour stock')}${inp('remise_ttc', 'Remise TTC (€)', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle (€)', 'number')}${inp('marge_vendeur', 'Marge HT vendeur (€)', 'number')}${MARGE_PLUS[r.site] != null ? `<div class="f"><label id="mrl">Marge réelle HT (€)</label><input name="marge_reelle" type="number" step="any" value="${esc(r.marge_reelle == null ? '' : r.marge_reelle)}" ${ro ? 'disabled' : ''}></div>` : inp('marge_reelle', 'Marge réelle HT (€)', 'number')}</div>`)}
     ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbee')}</div>`)}
-    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA financement (€)', 'number')}</div><div class="toggles" style="margin-top:10px">${tg('fi', 'FI')}${tg('assurance', 'Assurance')}${tg('loa', 'LOA')}${tg('annulation', 'Annulée', true)}</div>`)}
+    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA FI HT (€)', 'number')}</div><div class="fs" style="margin-top:10px"><h4>Financement</h4><div class="toggles">${tg('fi', 'Crédit')}${tg('loa', 'LOA')}${tg('lld', 'LLD')}</div></div><div class="fs" style="margin-top:10px"><h4>Assurances</h4><div class="toggles">${tg('ass_pf', 'Perte FI')}${tg('ass_deces', 'Décès')}${tg('ass_extgar', 'Ext. garantie')}</div></div><div class="toggles" style="margin-top:12px">${tg('annulation', 'Annulée', true)}</div>`)}
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
@@ -830,9 +837,9 @@ function paramView(site) {
   const p = S.params[site] || {}, ed = canParam(site);
   const ta = (k, v) => `<textarea id="p_${k}" ${ed ? '' : 'disabled'}>${esc((v || []).join('\n'))}</textarea>`;
   let og = `<table class="mx og"><tr><th class="lab">Objectifs ${S.year}</th>${MOIS_C.map(m => `<th>${m}</th>`).join('')}<th class="tt">TOTAL</th></tr>`;
-  [['cde', 'Commandes'], ['liv', 'Livraisons'], ['marge', 'Marge HT (€)']].forEach(([k, l]) => {
+  [['cde', 'Commandes'], ['liv', 'Livraisons'], ['marge', 'Marge HT (€)'], ['caf', 'CA FI HT (€)'], ['ipfi', 'IP FI (%)']].forEach(([k, l]) => {
     let t = 0;
-    og += `<tr><td class="lab">${l}</td>${[...Array(12)].map((_, i) => { const o = S.obj[site + '|' + S.year + '|' + (i + 1)] || {}; t += N(o[k]); return `<td><input data-k="${k}" data-m="${i + 1}" value="${o[k] == null ? '' : o[k]}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${k === 'marge' ? fE(t) : fN(t)}</td></tr>`;
+    og += `<tr><td class="lab">${l}</td>${[...Array(12)].map((_, i) => { const o = S.obj[site + '|' + S.year + '|' + (i + 1)] || {}; t += N(o[k]); return `<td><input data-k="${k}" data-m="${i + 1}" value="${o[k] == null ? '' : o[k]}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${k === 'marge' || k === 'caf' ? fE(t) : k === 'ipfi' ? '' : fN(t)}</td></tr>`;
   });
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
@@ -979,7 +986,7 @@ async function previewImport() {
   for (let i = 2; i < aoa.length; i++) {
     const a = aoa[i]; if (!a) continue;
     const o = {};
-    COLS.filter(c => c[0] !== 'entite').forEach(([k, , t], j) => {   // ordre des colonnes du classeur (sans Entité)
+    XL_ORDER.map(k => COLS.find(c => c[0] === k)).forEach(([k, , t], j) => {   // ordre des colonnes du classeur
       const v = a[j];
       if (t === 'date') o[k] = xDate(v);
       else if (t === 'eur' || t === 'int') o[k] = xNum(v);
@@ -1037,7 +1044,7 @@ function exportRecap() {
     ['LIVRAISONS', [...vv('liv'), ['TOTAL', st.liv], ['OBJECTIF', st.ol]]],
     ['FI', [...vv('fi'), ['TOTAL', st.fi]]],
     ['MARGE', [...vv('marge'), ['TOTAL', st.marge], ['OBJECTIF', st.om]]],
-    ['CA FINANCEMENT', [...Object.entries(st.org).map(([o, a]) => [o || 'NON RENSEIGNÉ', a]), ['TOTAL', st.caf]]],
+    ['CA FI HT', [...Object.entries(st.org).map(([o, a]) => [o || 'NON RENSEIGNÉ', a]), ['TOTAL', st.caf]]],
     ['COYOTE', [...vv('coy'), ['TOTAL', st.coy]]], ['PROTECH', [...vv('pro'), ['TOTAL', st.pro]]], ['BULBEE', [...vv('bul'), ['TOTAL', st.bul]]],
     ['VENTES AM', [...vv('am'), ['TOTAL', st.am]]],
   ]);
