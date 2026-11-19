@@ -311,8 +311,8 @@ const COLS = [
 ];
 // Ordre des colonnes du classeur Excel (A → AD), utilisé pour l'import
 const XL_ORDER = ['date_cde','marque','modele','immat','client','vendeur','cession','repreneur','prix_vente_ht','jours_stock','marge_prev','marge_vendeur','marge_reelle','remise_ttc','frais_admin','eurodatacar','pack_liv','coyote','protech','bulbbee','annulation','date_fact','garantie','fi','ca_fin','assurance','organisme','loa','reprise','commentaires'];
-const HIDE_GRID = ['repreneur', 'assurance', 'depot'];   // colonnes conservées en base mais retirées de l'affichage
-const GCOLS = () => COLS.filter(c => !HIDE_GRID.includes(c[0]));
+const HIDE_GRID = ['repreneur', 'assurance', 'depot', 'pack_liv'];   // colonnes conservées en base mais retirées de l'affichage
+const GCOLS = site => COLS.filter(c => !HIDE_GRID.includes(c[0]) && !(site && c[0] === 'entite' && !entList(site).length));   // pas de colonne Entité sur les parcs mono-entité
 const COLW = {date_cde:50,entite:50,marque:70,modele:60,immat:60,client:64,vendeur:64,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:36,marge_prev:50,marge_vendeur:52,marge_reelle:52,remise_ttc:40,frais_admin:40,eurodatacar:44,pack_liv:28,coyote:46,protech:50,bulbbee:48,annulation:46,date_fact:54,garantie:54,fi:42,ca_fin:52,assurance:46,organisme:58,loa:26,reprise:46,commentaires:32,ass_pf:36,ass_deces:38,ass_extgar:32,lld:26};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
 const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
@@ -325,7 +325,8 @@ const MARQ_DEF = {'MB': ['MERCEDES', 'AM'], 'FMC / NSA': ['FORD', 'NISSAN', 'AM'
 // Entités par parc (réglables dans « Vendeurs & objectifs ») et marque associée à chaque entité
 const ENT_DEF = {'mb-villeneuve': ['MB', 'GEELY'], 'mb-roquebrune': ['MB', 'VUL', 'BYD'], 'mb-toulon': ['MB', 'VUL', 'BYD'], 'nsa-cannes': ['NSA', 'FMC', 'GEELY'], 'fmc-nice': ['FMC', 'NSA']};
 const ENT_MARQ = {MB: 'MERCEDES', VUL: 'MERCEDES', VO: 'AM', GEELY: 'GEELY', BYD: 'BYD', NSA: 'NISSAN', FMC: 'FORD', AUDI: 'AUDI', VW: 'VOLKSWAGEN'};
-const entList = site => { const l = ((S.params[site] || {}).entites) || []; return l.length ? l : (ENT_DEF[site] || []); };
+const ENT_NONE = ['mb-cannes', 'audi', 'vw-toulon', 'vw-ollioules', 'six-fours'];   // parcs sans entité
+const entList = site => { if (ENT_NONE.includes(site)) return []; const l = ((S.params[site] || {}).entites) || []; return l.length ? l : (ENT_DEF[site] || []); };
 const marqList0 = site => { const e = entList(site); return e.length ? [...new Set([...e.map(x => ENT_MARQ[x] || x), 'AM'])] : null; };
 const marqList = site => { const l = ((S.params[site] || {}).marques) || []; return l.length ? l : (marqList0(site) || MARQ_DEF[(S.sites.find(x => x.slug === site) || {}).grp] || ['AM']); };
 const vendList = site => [...new Set([...(((S.params[site] || {}).vendeurs) || []), ...BASE_VEND])];
@@ -833,7 +834,7 @@ function cmdView(site) {
   };
   const tot = k => rows.filter(r => !r.annulation).reduce((s, r) => s + N(r[k]), 0);
   const cnt = k => rows.filter(r => !r.annulation && r[k]).length;
-  const GC = GCOLS();
+  const GC = GCOLS(site);
   const accStart = GC.findIndex(c => c[0] === 'frais_admin'), accEnd = GC.findIndex(c => c[0] === 'bulbbee');
   let g = '<tr class="g">';
   GC.forEach((c, i) => { if (i === accStart) g += `<th class="acc" colspan="${accEnd - accStart + 1}">ACCESSOIRES</th>`; else if (i < accStart || i > accEnd) g += '<th></th>'; });
@@ -963,7 +964,7 @@ function paramView(site) {
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
     <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
-    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}<p class="note">Toujours ajoutés pour tous les parcs : ${BASE_VEND.join(', ')}.</p></div><div><h4 class="eyebrow">Entités du parc</h4>${ta('entites', entList(site))}<p class="note">Ex. MB, GEELY. Laisser vide si le parc n'a qu'une entité.</p></div><div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}<p class="note">« AM » = autres marques (compté en Ventes AM).</p></div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
+    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}<p class="note">Toujours ajoutés pour tous les parcs : ${BASE_VEND.join(', ')}.</p></div>${ENT_NONE.includes(site) ? '' : `<div><h4 class="eyebrow">Entités du parc</h4>${ta('entites', entList(site))}<p class="note">Ex. MB, GEELY. Laisser vide si le parc n'a qu'une entité.</p></div>`}<div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}<p class="note">« AM » = autres marques (compté en Ventes AM).</p></div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
 }
 async function saveObj(site) {
   const by = {};
@@ -977,7 +978,7 @@ async function saveObj(site) {
   flash('Objectifs enregistrés'); renderMain();
 }
 async function saveParams(site) {
-  const L = k => [...new Set($('#p_' + k).value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean))];
+  const L = k => !$('#p_' + k) ? [] : [...new Set($('#p_' + k).value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean))];
   const o = {vendeurs: L('vendeurs'), entites: L('entites'), marques: L('marques'), organismes: L('organismes'), garanties: L('garanties'), updated_at: new Date().toISOString()};
   const { error } = await S.sb.from('tc_params').update(o).eq('site', site);
   if (error) { flash('Erreur : ' + error.message); return; }
@@ -1142,7 +1143,7 @@ async function doImport() {
 // ---------- Exports Excel ----------
 function exportCmd(site) {
   const rows = cmdFiltered(site);
-  const GC = GCOLS(), ai = GC.findIndex(c => c[0] === 'frais_admin'), aj = GC.findIndex(c => c[0] === 'bulbbee');
+  const GC = GCOLS(site), ai = GC.findIndex(c => c[0] === 'frais_admin'), aj = GC.findIndex(c => c[0] === 'bulbbee');
   const aoa = [GC.map(c => c[1])];
   rows.forEach(r => aoa.push(GC.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])));
   const ws = XLSX.utils.aoa_to_sheet(aoa, {cellDates: true});
