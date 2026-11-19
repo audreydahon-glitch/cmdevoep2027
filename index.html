@@ -340,7 +340,7 @@ const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
 const BASE_VEND = ['ALCOPA', 'MARCHAND', 'CESSION', 'DIRECTION'];
 // Marge réelle calculée automatiquement = marge vendeur + montant (parcs concernés)
 const MARGE_PLUS = {'mb-villeneuve': 500, 'mb-cannes': 500};
-const MARGE_PLUS_EXCLUS = ['CESSION', 'ALCOPA'];   // pour ces lignes, la marge réelle se saisit à la main
+const MARGE_PLUS_EXCLUS = ['CESSION', 'ALCOPA', 'MARCHAND'];   // pour ces lignes, la marge réelle se saisit à la main
 const MARQ_DEF = {'MB': ['MERCEDES', 'AM'], 'FMC / NSA': ['FORD', 'NISSAN', 'AM'], 'GVA': ['VOLKSWAGEN', 'AUDI', 'AM'], 'GEELY': ['GEELY', 'AM'], 'BYD': ['BYD', 'AM']};
 // Entités par parc (réglables dans « Vendeurs & objectifs ») et marque associée à chaque entité
 const ENT_DEF = {'mb-villeneuve': ['MB', 'GEELY'], 'mb-roquebrune': ['MB', 'VUL', 'BYD'], 'mb-toulon': ['MB', 'VUL', 'BYD'], 'nsa-cannes': ['NSA', 'FMC', 'GEELY'], 'fmc-nice': ['FMC', 'NSA']};
@@ -946,7 +946,7 @@ function openCmd(id) {
     const upd = () => {
       const auto = !MARGE_PLUS_EXCLUS.includes(vend());
       mr.readOnly = auto; mr.style.background = auto ? '#f3f6fb' : ''; mr.style.fontWeight = auto ? '600' : '';
-      $('#mrl').textContent = auto ? `Marge réelle HT (€) · auto = vendeur + ${plus} €` : 'Marge réelle HT (€) · saisie libre';
+      $('#mrl').textContent = 'Marge réelle HT (€)';
       if (auto) { const v = mv.value.trim().replace(',', '.'); mr.value = v === '' || isNaN(v) ? '' : Number(v) + plus; }
     };
     mv.addEventListener('input', upd); F.elements.vendeur_sel.addEventListener('change', upd); F.elements.vendeur_autre.addEventListener('input', upd); upd();
