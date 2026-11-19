@@ -96,6 +96,7 @@ body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .rb{border-top:2px solid var(--ink2);padding:10px 2px 2px;font-size:15px;color:var(--ink2)}
 .rb b{font-family:var(--f-d);font-size:24px;font-weight:800;margin-right:6px;color:var(--ink);font-stretch:92%}
 .rb.alert b{color:var(--neg)}
+.mx.lfi td,.mx.lfi th{padding-left:2px;padding-right:4px;font-size:12.5px}.mx.lfi td.lab{font-size:13px}.mx.lfi td.fi.pos,.mx.lfi td.fi.neg{font-weight:500}
 
 /* Cartes */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -526,12 +527,14 @@ function stats(sites, year, ent) {
   Object.values(out.v).forEach(v => Object.keys(v).forEach(k => v[k][0] = sum(v[k])));
   Object.values(out.org).forEach(a => a[0] = sum(a)); Object.values(out.gar).forEach(a => a[0] = sum(a));
   // Objectifs
-  out.oc = z(); out.ol = z(); out.om = z(); out.ocaf = z(); out.oip = z(); const nip = z();
+  out.oc = z(); out.ol = z(); out.om = z(); out.ocaf = z(); out.oip = z(); out.oorg = {}; const nip = z();
   if (!ent) for (const s of sites) for (let m = 1; m <= 12; m++) {   // objectifs : au niveau du parc (vue Global)
     const o = S.obj[s + '|' + year + '|' + m]; if (!o) continue;
     out.oc[m] += N(o.cde); out.ol[m] += N(o.liv); out.om[m] += N(o.marge); out.ocaf[m] += N(o.caf);
     if (o.ipfi != null && o.ipfi !== '') { out.oip[m] += N(o.ipfi) / 100; nip[m]++; }
+    Object.entries(o.org || {}).forEach(([k, v]) => { if (N(v)) (out.oorg[k] || (out.oorg[k] = z()))[m] += N(v); });
   }
+  Object.values(out.oorg).forEach(a => a[0] = sum(a));
   ['oc','ol','om','ocaf'].forEach(k => out[k][0] = sum(out[k]));
   for (let m = 1; m <= 12; m++) out.oip[m] = nip[m] ? out.oip[m] / nip[m] : 0;   // IP FI : moyenne des parcs
   { const v = out.oip.slice(1).filter(Boolean); out.oip[0] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; }
@@ -553,8 +556,8 @@ function tilesHtml(st) {
   const T = [
     ['dark', 'Commandes', fN(st.cde[m]), objTxt(st.cde[m], st.oc[m], fN), bar(pct(st.cde[m], st.oc[m]))],
     ['', 'VO livrés', fN(st.liv[m]), objTxt(st.liv[m], st.ol[m], fN), bar(pct(st.liv[m], st.ol[m]))],
-    ['ac" style="--c:#5b3fb0', 'CA FI HT', fE(st.caf[m]), st.ocaf[m] ? objTxt(st.caf[m], st.ocaf[m], fE) : `${nf0.format(st.fi[m])} dossiers financés`, st.ocaf[m] ? bar(pct(st.caf[m], st.ocaf[m])) : ''],
-    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), oip ? `objectif du mois ${fP(oip)} · ${nf0.format(st.fi[m])} financés / ${nf0.format(st.liv[m])}` : `${nf0.format(st.fi[m])} financés / ${nf0.format(st.liv[m])} livrés`, oip && tf != null ? bar(tf / oip) : ''],
+    ['ac" style="--c:#5b3fb0', 'CA FI HT', fE(st.caf[m]), st.ocaf[m] ? `objectif du mois ${fE(st.ocaf[m])}` : 'objectif du mois non saisi', st.ocaf[m] ? bar(pct(st.caf[m], st.ocaf[m])) : ''],
+    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), oip ? `objectif du mois ${fP(oip)}` : 'objectif du mois non saisi', oip && tf != null ? bar(tf / oip) : ''],
     ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[m]), objTxt(st.marge[m], st.om[m], fE), bar(pct(st.marge[m], st.om[m]))],
     ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[m] ? fE(st.marge[m] / st.liv[m]) : '-', `sur ${nf0.format(st.liv[m])} VO livrés`, ''],
   ];
@@ -617,26 +620,25 @@ function recapTable(st, sec) {
     return `<table class="mx">${hdr('Marge réelle HT (date facture)', 'CUMUL')}${g('marge', fE)}${mrow('Total', st.marge, fE, 'sub')}${objRows(st.marge, st.om, fE)}${mrow('Marge moy. / VO livré', moy, fE, 'ec')}</table>`;
   }
   if (sec === 'liv') {
-    let h = `<table class="mx"><tr><th class="lab" rowspan="2">Livraisons (date facture)</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="3" class="tt" style="text-align:center">TOTAL</th></tr>
-      <tr>${MOIS_C.map(() => '<th class="pair">LIV</th><th>FI</th>').join('')}<th class="tt">LIV</th><th>FI</th><th>IP FI</th></tr>`;
-    const row = (lab, liv, fi, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${liv.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi">${fN(fi[i + 1])}</td>`).join('')}<td class="tt">${fN(liv[0])}</td><td class="tt">${fN(fi[0])}</td><td class="tt">${liv[0] ? fP(fi[0] / liv[0]) : '-'}</td></tr>`;
+    // Par vendeur et par mois (date de facture) : VO livrés, dossiers financés, IP FI (rouge < 40 %, vert ≥ 40 %)
+    const ipc = (f, l) => l ? `<td class="fi ${f / l >= 0.4 ? 'pos' : 'neg'}">${fP(f / l)}</td>` : '<td class="fi z">-</td>';
+    let h = `<table class="mx lfi" style="table-layout:fixed"><colgroup><col style="width:118px">${'<col style="width:27px"><col style="width:22px"><col style="width:40px">'.repeat(12)}<col style="width:34px"><col style="width:30px"><col style="width:44px"></colgroup><tr><th class="lab" rowspan="2" style="white-space:normal">Livraisons<br>(date facture)</th>${MOIS_C.map(m => `<th colspan="3" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="3" class="tt" style="text-align:center">ANNÉE</th></tr>
+      <tr>${MOIS_C.map(() => '<th class="pair">LIV</th><th>FI</th><th>IP</th>').join('')}<th class="tt">LIV</th><th class="tt">FI</th><th class="tt">IP</th></tr>`;
+    const row = (lab, liv, fi, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${liv.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi ${fi[i + 1] ? '' : 'z'}">${fN(fi[i + 1])}</td>${ipc(fi[i + 1], v)}`).join('')}<td class="tt">${fN(liv[0])}</td><td class="tt">${fN(fi[0])}</td>${ipc(fi[0], liv[0]).replace('<td class="fi', '<td class="tt')}</tr>`;
     V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; h += row(vlab(v), x.liv || Array(13).fill(0), x.fi || Array(13).fill(0), v === '__NA' ? 'na' : ''); });
-    h += row('Total', st.liv, st.fi, 'sub');
-    h += `<tr class="obj"><td class="lab">Objectif livraisons</td>${st.ol.slice(1).map(v => `<td colspan="2" style="text-align:center">${fN(v)}</td>`).join('')}<td class="tt">${fN(st.ol[0])}</td><td class="tt"></td><td class="tt"></td></tr>`;
-    h += `<tr class="ec"><td class="lab">IP FI</td>${st.liv.slice(1).map((v, i) => `<td colspan="2" style="text-align:center">${v ? fP(st.fi[i + 1] / v) : '-'}</td>`).join('')}<td class="tt"></td><td class="tt"></td><td class="tt">${st.liv[0] ? fP(st.fi[0] / st.liv[0]) : '-'}</td></tr>`;
-    h += '</table>';
-    // IP FI = dossiers financés / VO livrés, par vendeur et par mois
-    const ip = (fi, liv) => liv.map((v, i) => v ? fi[i] / v : null);
-    const prow = (lab, arr, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${arr.slice(1).map(v => `<td class="${v == null ? 'z' : v >= 0.4 ? 'pos' : 'neg'}">${fP(v)}</td>`).join('')}<td class="tt ${arr[0] == null ? '' : arr[0] >= 0.4 ? 'pos' : 'neg'}">${fP(arr[0])}</td></tr>`;
-    let t2 = `<table class="mx" style="margin-top:6px">${hdr('IP FI (FI / VO livrés)', 'ANNÉE')}`;
-    V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; t2 += prow(vlab(v), ip(x.fi || Array(13).fill(0), x.liv || Array(13).fill(0)), v === '__NA' ? 'na' : ''); });
-    t2 += prow('IP FI du parc', ip(st.fi, st.liv), 'sub');
-    t2 += `<tr class="obj"><td class="lab">Objectif IP FI</td>${st.oip.slice(1).map(v => `<td>${v ? fP(v) : '-'}</td>`).join('')}<td class="tt">${st.oip[0] ? fP(st.oip[0]) : '-'}</td></tr>`;
-    return h + t2 + '</table>';
+    h += row('Total parc', st.liv, st.fi, 'sub');
+    h += `<tr class="obj"><td class="lab">Objectifs</td>${st.ol.slice(1).map((v, i) => `<td style="border-left:1px solid var(--line2)">${v ? fN(v) : '-'}</td><td></td><td>${st.oip[i + 1] ? fP(st.oip[i + 1]) : '-'}</td>`).join('')}<td class="tt">${st.ol[0] ? fN(st.ol[0]) : '-'}</td><td class="tt"></td><td class="tt">${st.oip[0] ? fP(st.oip[0]) : '-'}</td></tr>`;
+    return h + '</table>';
   }
   if (sec === 'fin') {
     const orgs = [...new Set([...((S.params[st.sites[0]] || {}).organismes || []), ...Object.keys(st.org)])].filter(Boolean);
-    return `<table class="mx">${hdr('CA FI HT par organisme')}${orgs.map(o => mrow(esc(o), st.org[o] || Array(13).fill(0), fE)).join('')}${st.org[''] ? mrow('Organisme non renseigné', st.org[''], fE, 'na') : ''}${mrow('Total', st.caf, fE, 'sub')}${objRows(st.caf, st.ocaf, fE)}
+    Object.keys(st.oorg).forEach(o => { if (!orgs.includes(o)) orgs.push(o); });
+    const Z = Array(13).fill(0);
+    const orow = o => { const r = st.org[o] || Z, ob = st.oorg[o]; if (!ob) return mrow(esc(o), r, fE);
+      const pc = r.map((v, i) => ob[i] ? v / ob[i] : null);
+      return mrow(esc(o), r, fE) + mrow('<span style="padding-left:14px">objectif</span>', ob, fE, 'obj') +
+        `<tr class="ec"><td class="lab"><span style="padding-left:14px">% réalisation</span></td>${pc.slice(1).map(v => `<td class="${v == null ? 'z' : v < 1 ? 'neg' : 'pos'}">${fP(v)}</td>`).join('')}<td class="tt ${pc[0] == null ? '' : pc[0] < 1 ? 'neg' : 'pos'}">${fP(pc[0])}</td></tr>`; };
+    return `<table class="mx">${hdr('CA FI HT par organisme')}${orgs.map(orow).join('')}${st.org[''] ? mrow('Organisme non renseigné', st.org[''], fE, 'na') : ''}${mrow('Total', st.caf, fE, 'sub')}${objRows(st.caf, st.ocaf, fE)}
       ${hdr('CA FI HT par vendeur')}${g('caf', fE, false)}${mrow('Total', st.caf, fE, 'sub')}</table>`;
   }
   if (sec === 'gar') {
@@ -838,6 +840,12 @@ function paramView(site) {
     let t = 0;
     og += `<tr><td class="lab">${l}</td>${[...Array(12)].map((_, i) => { const o = S.obj[site + '|' + S.year + '|' + (i + 1)] || {}; t += N(o[k]); return `<td><input data-k="${k}" data-m="${i + 1}" value="${o[k] == null ? '' : o[k]}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${k === 'marge' || k === 'caf' ? fE(t) : k === 'ipfi' ? '' : fN(t)}</td></tr>`;
   });
+  const orgL = p.organismes || [];
+  if (orgL.length) {
+    og += `<tr><th class="lab" style="padding-top:14px">CA FI HT par organisme (€)</th>${MOIS_C.map(() => '<th></th>').join('')}<th class="tt"></th></tr>`;
+    orgL.forEach(org => { let t = 0;
+      og += `<tr><td class="lab">${esc(org)}</td>${[...Array(12)].map((_, i) => { const o = S.obj[site + '|' + S.year + '|' + (i + 1)] || {}, v = (o.org || {})[org]; t += N(v); return `<td><input data-k="org" data-o="${esc(org)}" data-m="${i + 1}" value="${v == null ? '' : v}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${fE(t)}</td></tr>`; });
+  }
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
     <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
@@ -845,7 +853,9 @@ function paramView(site) {
 }
 async function saveObj(site) {
   const by = {};
-  document.querySelectorAll('.og input').forEach(i => { const m = +i.dataset.m; (by[m] || (by[m] = {site, annee: S.year, mois: m}))[i.dataset.k] = i.value.trim() === '' ? null : Number(i.value.replace(/\s/g, '').replace(',', '.')); });
+  document.querySelectorAll('.og input').forEach(i => { const m = +i.dataset.m, r = by[m] || (by[m] = {site, annee: S.year, mois: m, org: Object.assign({}, (S.obj[site + '|' + S.year + '|' + m] || {}).org)});
+    const v = i.value.trim() === '' ? null : Number(i.value.replace(/\s/g, '').replace(',', '.'));
+    if (i.dataset.k === 'org') { if (v == null) delete r.org[i.dataset.o]; else r.org[i.dataset.o] = v; } else r[i.dataset.k] = v; });
   const rows = Object.values(by);
   const { error } = await S.sb.from('tc_objectifs').upsert(rows);
   if (error) { flash('Erreur : ' + error.message); return; }
