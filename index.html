@@ -545,7 +545,7 @@ function stats(sites, year, ent) {
 // Met en gras les chiffres d'un texte (ex. « objectif 600 · 85 % »)
 const boldNums = t => String(t).replace(/-?\d[\d\u202f\u00a0 ]*(?:[.,]\d+)?(?:\s?[%€])?/g, m => `<b>${m.trim()}</b> `).replace(/ $/, '');
 // ---------- Tuiles + bandeau du mois ----------
-function tilesHtml(st) {
+function tilesHtml(st, protech) {
   const m = S.month, mois = MOIS[m - 1].toLowerCase();
   // Tuiles et cartes : chiffres du mois sélectionné face à l'objectif du mois. Bandeau du bas : cumul janvier → mois.
   const pct = (a, b) => b ? a / b : null;
@@ -576,8 +576,8 @@ function tilesHtml(st) {
   else R.push([c('oc') ? fP(c('cde') / c('oc')) : '-', 'de l\'objectif commandes cumulé']);
   const liv = st.liv[m];
   const A = [['Frais admin', st.fa[m], '#7aa95c'], ['Eurodatacar', st.edc[m], '#4f9a8a'], ['Coyote', st.coy[m], '#ED7D31'],
-    ['Bulbee', st.bul[m], '#d99a14'], ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
-  const accRow = `<div class="accs">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div></div>`; }).join('')}</div>`;
+    ['Bulbee', st.bul[m], '#d99a14'], ...(protech ? [['Protech', st.pro[m], '#7a5c99']] : []), ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
+  const accRow = `<div class="accs" style="grid-template-columns:repeat(${A.length},1fr)">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div></div>`; }).join('')}</div>`;
   return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois}</div><div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
 }
@@ -610,6 +610,24 @@ function objRows(tot, obj, f) {
   return mrow('Objectif', obj, f, 'obj') +
     `<tr class="ec"><td class="lab">Écart</td>${ec.slice(1).map(v => `<td class="${v == null ? 'z' : v < 0 ? 'neg' : 'pos'}">${v == null ? '-' : (v > 0 ? '+' : '') + f(v || 0.0001).replace('-', '−')}</td>`).join('')}<td class="tt ${ec[0] == null ? '' : ec[0] < 0 ? 'neg' : 'pos'}">${ec[0] == null ? '-' : (ec[0] > 0 ? '+' : '') + f(ec[0] || 0.0001)}</td></tr>` +
     `<tr class="ec"><td class="lab">% réalisation</td>${pc.slice(1).map(v => `<td class="${v == null ? 'z' : v < 1 ? 'neg' : 'pos'}">${fP(v)}</td>`).join('')}<td class="tt">${fP(pc[0])}</td></tr>`;
+}
+// Un tableau par accessoire : nombre + IP (accessoires / VO livrés) côte à côte, par ligne (vendeur ou parc) et par mois
+const ACC_L = [['fa', 'Frais admin'], ['edc', 'Eurodatacar'], ['coy', 'Coyote'], ['pro', 'Protech'], ['bul', 'Bulbee'], ['rep', 'Reprises']];
+function accTables(rows) {
+  const Z = Array(13).fill(0);
+  const SEUIL = {fa: 0.8, coy: 0.5, bul: 0.5, edc: 0.5};   // rouge en dessous, vert au-dessus (pas de couleur pour Protech et Reprises)
+  const COLA = {fa: '#5f8f42', edc: '#3d8273', coy: '#d9661c', pro: '#7a5c99', bul: '#b9810c', rep: '#3a63ad'};
+  const ipc = (n, l) => l && n ? fP(n / l) : '-';
+  const ipk = (k, n, l) => !(l && n) || SEUIL[k] == null ? '' : n / l >= SEUIL[k] ? 'pos' : 'neg';
+  let h = '';
+  ACC_L.forEach(([k, lab]) => {
+    h += `<table class="mx" style="margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:190px">${'<col><col>'.repeat(13)}</colgroup><tr><th class="lab" rowspan="2" style="border-left:5px solid ${COLA[k]};background:${COLA[k]}1f"><div style="font-size:15px;font-weight:800;color:${COLA[k]};letter-spacing:.06em">${lab}</div>${SEUIL[k] != null ? `<div style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);font-size:12.5px;margin-top:2px">objectif IP ${Math.round(SEUIL[k] * 100)} %</div>` : ''}</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="2" class="tt" style="text-align:center">ANNÉE</th></tr>
+      <tr>${MOIS_C.map(() => '<th class="pair">NB</th><th>IP</th>').join('')}<th class="tt">NB</th><th class="tt">IP</th></tr>`;
+    rows.forEach(([name, x, cls]) => { const n = x[k] || Z, l = x.liv || Z;
+      h += `<tr class="${cls || ''}"><td class="lab">${name}</td>${n.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi ${ipk(k, v, l[i + 1])}">${ipc(v, l[i + 1])}</td>`).join('')}<td class="tt">${fN(n[0])}</td><td class="tt ${ipk(k, n[0], l[0])}">${ipc(n[0], l[0])}</td></tr>`; });
+    h += '</table>';
+  });
+  return h;
 }
 function vlab(k) { return k === '__NA' ? 'Non affecté' : esc(k); }
 function recapTable(st, sec) {
@@ -646,22 +664,9 @@ function recapTable(st, sec) {
     return `<table class="mx">${hdr('Garanties (date facture)')}${gars.map(x => mrow(esc(x), st.gar[x] || Array(13).fill(0), fN)).join('')}${mrow('Sans garantie', st.gar[''] || Array(13).fill(0), fN)}${mrow('Total livré', st.liv, fN, 'sub')}</table>`;
   }
   if (sec === 'acc') {
-    // Un tableau par accessoire : nombre + IP (accessoires / VO livrés) côte à côte, par vendeur et par mois
-    const VV = V.filter(v => !isHV(v)), Z = Array(13).fill(0);
-    // Seuils d'IP : rouge en dessous, vert au-dessus (pas de couleur pour Protech et Reprises)
-    const SEUIL = {fa: 0.8, coy: 0.5, bul: 0.5, edc: 0.5};
-    const COLA = {fa: '#5f8f42', edc: '#3d8273', coy: '#d9661c', pro: '#7a5c99', bul: '#b9810c', rep: '#3a63ad'};
-    const ipc = (n, l) => l && n ? fP(n / l) : '-';
-    const ipk = (k, n, l) => !(l && n) || SEUIL[k] == null ? '' : n / l >= SEUIL[k] ? 'pos' : 'neg';
-    let h = '';
-    [['fa', 'Frais admin'], ['edc', 'Eurodatacar'], ['coy', 'Coyote'], ['pro', 'Protech'], ['bul', 'Bulbee'], ['rep', 'Reprises']].forEach(([k, lab]) => {
-      h += `<table class="mx" style="margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:170px">${'<col><col>'.repeat(13)}</colgroup><tr><th class="lab" rowspan="2" style="border-left:5px solid ${COLA[k]};background:${COLA[k]}1f"><div style="font-size:15px;font-weight:800;color:${COLA[k]};letter-spacing:.06em">${lab}</div>${SEUIL[k] != null ? `<div style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);font-size:12.5px;margin-top:2px">objectif IP ${Math.round(SEUIL[k] * 100)} %</div>` : ''}</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="2" class="tt" style="text-align:center">ANNÉE</th></tr>
-        <tr>${MOIS_C.map(() => '<th class="pair">NB</th><th>IP</th>').join('')}<th class="tt">NB</th><th class="tt">IP</th></tr>`;
-      const row = (name, n, l, cls) => `<tr class="${cls || ''}"><td class="lab">${name}</td>${n.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi ${ipk(k, v, l[i + 1])}">${ipc(v, l[i + 1])}</td>`).join('')}<td class="tt">${fN(n[0])}</td><td class="tt ${ipk(k, n[0], l[0])}">${ipc(n[0], l[0])}</td></tr>`;
-      VV.forEach(v => { const x = st.v[v] || {}; h += row(vlab(v), x[k] || Z, x.liv || Z, v === '__NA' ? 'na' : ''); });
-      h += row('Total parc', st[k], st.liv, 'sub') + '</table>';
-    });
-    return h;
+    const Z = Array(13).fill(0), rows = V.filter(v => !isHV(v)).map(v => [vlab(v), st.v[v] || {}, v === '__NA' ? 'na' : '']);
+    rows.push(['Total parc', st, 'sub']);
+    return accTables(rows);
   }
   if (sec === 'am') return `<table class="mx">${hdr('Ventes AM')}${g('am', fN)}${mrow('Total', st.am, fN, 'sub')}</table>`;
   return '';
@@ -672,20 +677,21 @@ function recapTotal() {
   const sites = selSites();
   const st = stats(sites, S.year);
   const per = sites.map(s => [s, stats([s], S.year)]);
-  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA FI HT'],['tfi','IP FI']];
+  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA FI HT'],['tfi','IP FI'],['acc','Accessoires'],['am','Ventes AM']];
   const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
-  const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : x[K][m];
+  const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : (x[K] || [])[m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
   let t = `<table class="mx">${hdr((secs.find(s => s[0] === K) || secs[0])[1])}`;
   per.forEach(([s, x]) => t += `<tr><td class="lab"><button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button></td>${[...Array(12)].map((_, i) => { const v = val(x, i + 1); return `<td class="${v ? '' : 'z'}">${f(v)}</td>`; }).join('')}<td class="tt">${f(val(x, 0))}</td></tr>`);
   t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
   if (K === 'cde' || K === 'liv' || K === 'marge' || K === 'caf') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om', caf: 'ocaf'}[K]], f);
   t += '</table>';
+  if (K === 'acc') t = accTables([...per.map(([s, x]) => [`<button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button>`, x, '']), ['Total', st, 'sub']]);
   let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
   syn += sl('Total', st, 'sub') + '</table>';
-  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul</span></div>` + tilesHtml(st) +
+  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul</span></div>` + tilesHtml(st, true) +
     `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div><button class="btn" onclick="exportTotal()">Exporter ${esc(selLabel())} en Excel</button></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto">${syn}</div>` : ''}</div>`;
 }
 
