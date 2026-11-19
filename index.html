@@ -143,6 +143,11 @@ body.narrow .ach2{grid-template-columns:1fr}
 .ach2 .acr{grid-template-columns:minmax(150px,200px) 1fr 104px 118px}
 .acn .lnk{display:inline-block;max-width:calc(100% - 22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;text-align:left;font-weight:600}
 .ach2 .acv{white-space:nowrap}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:18px 20px 20px}
+body.narrow .pgrid{grid-template-columns:1fr}
+.pgt{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--c);margin-bottom:8px;padding-left:2px}
+.pcard{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer}
+.pcard:hover{background:#f6f9ff;border-color:#c9d6ee}.pcard b{color:var(--muted);font-weight:600}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
 .chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
 
@@ -525,6 +530,10 @@ function render() {
   renderMain();
 }
 function pick(t, v) { S.ent = null; S.sel = t === 'site' ? {t, s: v} : t === 'grp' ? {t, g: v} : {t: 'all'}; if (S.sel.t !== 'site' && !['recap','admin'].includes(S.tab)) S.tab = 'recap'; if (S.sel.t === 'site') S.tab = 'cmd'; render(); }
+function parcGrid(sites) {
+  const grps = [...new Set(sites.map(s => siteObj(s).grp))];
+  return `<div class="pgrid">${grps.map(g => `<div class="pgg"><div class="pgt" style="--c:${GRP_COL[g] || '#8792a6'}">${esc(g)}</div>${sites.filter(s => siteObj(s).grp === g).map(s => `<button class="pcard" style="--c:${GRP_COL[g] || '#8792a6'}" onclick="pickRecap('${s}')"><span>${esc(siteObj(s).label)}</span><b>→</b></button>`).join('')}</div>`).join('')}</div>`;
+}
 function pickRecap(s) { S.ent = null; S.sel = {t: 'site', s}; S.tab = 'recap'; S.recapSec = null; render(); window.scrollTo(0, 0); }
 function go(t) { S.tab = t; renderMain(); }
 
@@ -841,7 +850,7 @@ function recapTotal() {
   per.forEach(([s, x]) => syn += sl(parcLab(s), x));
   syn += sl('Total', st, 'sub') + '</table>';
   return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul</span></div>` + tilesHtml(st, true) +
-    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div><button class="btn" onclick="exportTotal()">Exporter ${esc(selLabel())} en Excel</button></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${K === 'acc' ? tAcc : t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto"><div class="pz">${pzHead('Synthèse par parc', `Cumul de l'année ${S.year}`, '#1d3557', [])}${syn}</div></div>` : ''}</div>`;
+    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div><button class="btn" onclick="exportTotal()">Exporter ${esc(selLabel())} en Excel</button></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${K === 'acc' ? tAcc : t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto"><div class="pz">${pzHead('Synthèse par parc', 'Cliquer sur un parc pour ouvrir son récap', '#4a5568', [])}${parcGrid(sites)}</div></div>` : ''}</div>`;
 }
 
 // ====================================================================
