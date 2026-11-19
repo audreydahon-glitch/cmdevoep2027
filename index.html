@@ -96,6 +96,7 @@ body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .rb{border-top:2px solid var(--ink2);padding:10px 2px 2px;font-size:15px;color:var(--ink2)}
 .rb b{font-family:var(--f-d);font-size:24px;font-weight:800;margin-right:6px;color:var(--ink);font-stretch:92%}
 .rb.alert b{color:var(--neg)}
+.rbo{font-size:13px;color:var(--muted);margin-top:2px}.rbo .pos{color:var(--pos);font-weight:700}.rbo .neg{color:var(--neg);font-weight:700}
 .pz{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:4px 0 6px;background:#fff}
 .pzh{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:14px 20px;background:#fff;color:var(--ink);border-left:5px solid var(--a);border-bottom:1px solid var(--line)}
 .pzt{font-family:var(--f-d);font-size:22px;font-weight:800;font-stretch:92%;letter-spacing:-.01em}.pzt span{font-weight:500;color:var(--muted);font-size:16px}
@@ -626,7 +627,7 @@ function tilesHtml(st, protech) {
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
   if (st.sites.length === 1) R.push(['Non affectées', fN(na), 'commandes sans vendeur connu', null, na ? '#ff8a7a' : '#6cc292', na ? 'alert' : '']);
   else R.push(['Marge moy. / VO', c('liv') ? fE(c('marge') / c('liv')) : '-', `sur ${nf0.format(c('liv'))} VO livrés`, null, '#6cc292']);
-  const cumul = `<div class="cumul"><div class="ch"><span>Cumul</span> janvier → ${mois} ${S.year}</div><div class="cg">${R.map(([l, v, o, p, col, cls]) => `<div class="ck ${cls || ''}" style="--c:${col}"><div class="cl">${l}</div><div class="cv">${v}</div><div class="co">${o}${p != null ? `<b class="${p >= 1 ? 'ok' : 'ko'}">${fP(p)}</b>` : ''}</div>${p != null ? `<div class="cb"><i style="width:${Math.min(100, Math.round(p * 100))}%"></i></div>` : ''}</div>`).join('')}</div></div>`;
+  const cumul = `<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois} ${S.year}</div><div class="ribbon">${R.map(([l, v, o, p, col, cls]) => `<div class="rb ${cls || ''}"><b>${v}</b>${({'Commandes': 'commandes', 'VO livrés': 'VO livrés', 'Marge réelle HT': 'de marge', 'Marge moy. / VO': 'marge moy. / VO', 'Non affectées': 'non affectées'})[l] || l}<div class="rbo">${o}${p != null ? ` · <span class="${p >= 1 ? 'pos' : 'neg'}">${fP(p)}</span>` : ''}</div></div>`).join('')}</div>`;
   const liv = st.liv[m];
   const A = [['Frais admin', st.fa[m], '#7aa95c'], ['Eurodatacar', st.edc[m], '#4f9a8a'], ['Coyote', st.coy[m], '#ED7D31'],
     ['Bulbee', st.bul[m], '#d99a14'], ...(protech ? [['Protech', st.pro[m], '#7a5c99']] : []), ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
@@ -730,14 +731,15 @@ function recapTable(st, sec) {
 const GRP_COL = {'MB': '#4a5568', 'FMC / NSA': '#d9661c', 'GVA': '#3a63ad'};
 const parcLab = s => { const o = siteObj(s); return `<span class="pdot" style="background:${GRP_COL[o.grp] || '#8792a6'}"></span><button class="lnk" onclick="pick('site','${s}')">${esc(o.label)}</button>`; };
 function pzHead(title, sub, col, kpis) {
-  return `<div class="pzh" style="--a:${col}"><div><div class="pzt">${title} <span>· ${esc(selLabel())} ${S.year}</span></div><div class="pzs">${sub}</div></div><div class="pzk">${kpis.map(([l, v, c]) => `<div><div class="kl">${l}</div><div class="kv ${c || ''}">${v}</div></div>`).join('')}</div></div>`;
+  return `<div class="pzh" style="--a:${col}"><div><div class="pzt">${title} <span>· ${esc(selLabel())} ${S.year}</span></div>${sub ? `<div class="pzs">${sub}</div>` : ''}</div><div class="pzk">${kpis.map(([l, v, c]) => `<div><div class="kl">${l}</div><div class="kv ${c || ''}">${v}</div></div>`).join('')}</div></div>`;
 }
 // Graphiques accessoires : classement des parcs par IP (cumul de l'année), avec le seuil d'objectif
 function accCharts(per) {
+  const m = S.month, cum = S.accPer !== 'mois', g = a => cum ? a.slice(1, m + 1).reduce((x, y) => x + y, 0) : a[m];
   const SEUIL = {fa: 0.8, coy: 0.5, bul: 0.5, edc: 0.5};
   const COLA = {fa: '#5f8f42', edc: '#3d8273', coy: '#d9661c', pro: '#7a5c99', bul: '#b9810c', rep: '#3a63ad'};
   return `<div class="ach">${ACC_L.map(([k, lab]) => {
-    const rows = per.map(([s, x]) => [s, x[k][0], x.liv[0], x.liv[0] ? x[k][0] / x.liv[0] : null]).sort((a, b) => (b[3] ?? -1) - (a[3] ?? -1));
+    const rows = per.map(([s, x]) => [s, g(x[k]), g(x.liv), g(x.liv) ? g(x[k]) / g(x.liv) : null]).sort((a, b) => (b[3] ?? -1) - (a[3] ?? -1));
     const sc = Math.max(1, SEUIL[k] || 0, ...rows.map(r => r[3] || 0));
     const sd = SEUIL[k];
     return `<div class="acg" style="--c:${COLA[k]}"><div class="acgh"><b>${lab}</b>${sd != null ? `<span>objectif IP ${Math.round(sd * 100)} %</span>` : ''}</div>
@@ -787,7 +789,8 @@ function recapTotal() {
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : (x[K] || [])[m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
   const t = K === 'acc' ? '' : presTable(K, per, st, f, val, (secs.find(s => s[0] === K) || secs[0])[1]);
-  const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', 'Classement des parcs par IP (accessoires / VO livrés), cumul de l\'année · vert : objectif atteint, rouge : en dessous, trait : objectif', '#d9661c', [])}${accCharts(per)}<div class="pzs" style="padding:6px 20px 10px;font-weight:600;color:var(--ink)">Détail par mois</div>${accTables([...per.map(([s, x]) => [parcLab(s), x, '']), ['Total', st, 'sub']], true)}</div>` : '';
+  const mo = MOIS[S.month - 1].toLowerCase();
+  const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', '', '#d9661c', [])}<div class="seg" style="margin:14px 20px 0">${[['mois', 'Mois de ' + mo], ['cum', 'Cumul janvier → ' + mo]].map(([k, l]) => `<button aria-pressed="${(S.accPer === 'mois') === (k === 'mois')}" onclick="S.accPer='${k}';renderMain()">${l}</button>`).join('')}</div>${accCharts(per)}</div>` : '';
   let syn = `<table class="mx pres"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(parcLab(s), x));
