@@ -96,6 +96,45 @@ body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .rb{border-top:2px solid var(--ink2);padding:10px 2px 2px;font-size:15px;color:var(--ink2)}
 .rb b{font-family:var(--f-d);font-size:24px;font-weight:800;margin-right:6px;color:var(--ink);font-stretch:92%}
 .rb.alert b{color:var(--neg)}
+.pz{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:4px 0 6px;background:#fff}
+.pzh{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 20px;background:linear-gradient(135deg,#13233d,#1d3557 65%,#24406a);color:#fff;border-bottom:4px solid var(--a)}
+.pzt{font-family:var(--f-d);font-size:22px;font-weight:800;font-stretch:92%;letter-spacing:-.01em}.pzt span{font-weight:500;color:#aebdd3;font-size:16px}
+.pzs{font-size:13px;color:#aebdd3;margin-top:3px}
+.pzk{display:flex;gap:26px}.pzk>div{border-left:1px solid rgba(255,255,255,.18);padding-left:16px}
+.pzk .kl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#aebdd3;font-weight:700}
+.pzk .kv{font-family:var(--f-d);font-size:20px;font-weight:700;margin-top:2px;white-space:nowrap}.pzk .kv.ok{color:#7ddc9f}.pzk .kv.ko{color:#ffb4a8}
+.mx.pres{width:100%;border-collapse:separate;border-spacing:0}
+.mx.pres th{background:#eef2f8;color:#2b3a52;font-size:11px;padding-top:10px;padding-bottom:10px}
+.mx.pres td{padding-top:10px;padding-bottom:10px;font-size:13.5px}
+.mx.pres tr:not(.sub):not(.obj):not(.ec):hover td{background-color:#f6f9ff}
+.mx.pres td.lab{font-weight:600}
+.mx.pres .pdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:9px;vertical-align:1px}
+.mx.pres tr.sub td{background:#1d3557!important;color:#fff;font-size:14px;border-top:0}
+.mx.pres tr.sub td .chp{background:rgba(255,255,255,.16);color:#fff}
+.mx.pres tr.obj td{background:#fbf8f0;color:#7a6a45;font-style:italic}
+.mx.pres td.tt{min-width:150px}
+.mx.pres .tbar{display:flex;justify-content:space-between;align-items:center;gap:10px;height:22px}
+.mx.pres .tbar i{display:block;height:8px;border-radius:4px;opacity:.6;flex:none}
+.mx.pres .tbar span{position:relative;font-weight:800}
+.mx.pres td.ob{color:var(--muted)}
+.chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
+.chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
+
+.cumul{background:linear-gradient(135deg,#13233d 0%,#1d3557 60%,#24406a 100%);border-radius:14px;padding:16px 20px 18px;margin-bottom:18px;color:#fff;box-shadow:0 6px 18px rgba(14,26,43,.18)}
+.cumul .ch{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#aebdd3;font-weight:600;margin-bottom:12px}
+.cumul .ch span{color:#fff;font-weight:800;margin-right:4px}
+.cumul .cg{display:grid;grid-template-columns:repeat(6,1fr);gap:0}
+body.narrow .cumul .cg{grid-template-columns:repeat(2,1fr);row-gap:14px}
+.cumul .ck{padding:2px 18px;border-left:1px solid rgba(255,255,255,.14)}
+.cumul .ck:first-child{border-left:0;padding-left:0}
+.cumul .cl{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);font-weight:700}
+.cumul .cv{font-family:var(--f-d);font-size:30px;font-weight:700;font-stretch:92%;margin:4px 0 2px;color:#fff;white-space:nowrap}
+.cumul .ck.alert .cv{color:#ff8a7a}
+.cumul .co{font-size:13px;color:#c5d1e3;display:flex;justify-content:space-between;gap:6px}
+.cumul .co b{font-weight:700}.cumul .co b.ok{color:#7ddc9f}.cumul .co b.ko{color:#ffb4a8}
+.cumul .cb{height:5px;border-radius:3px;background:rgba(255,255,255,.14);margin-top:8px;overflow:hidden}
+.cumul .cb i{display:block;height:100%;background:var(--c);border-radius:3px}
+
 .mx.lfi td,.mx.lfi th{padding-left:2px;padding-right:4px;font-size:12.5px}.mx.lfi td.lab{font-size:13px}.mx.lfi td.fi.pos,.mx.lfi td.fi.neg{font-weight:500}
 
 /* Cartes */
@@ -564,22 +603,26 @@ function tilesHtml(st, protech) {
   const cu = (a, o, f) => o ? ` · obj. ${f(o)} (${fP(a / o)})` : '';
   const c = k => ytd(st[k]);
   const oipv = st.oip.slice(1, m + 1).filter(Boolean), oipc = oipv.length ? oipv.reduce((a, b) => a + b, 0) / oipv.length : 0;
+  // Bandeau cumul (style présentation) : [libellé, valeur, objectif, % atteint, couleur]
+  const k3 = (lab, v, o, f, col) => [lab, f(v), o ? `objectif ${f(o)}` : 'objectif non saisi', o ? v / o : null, col];
+  const ipC = pct(c('fi'), c('liv'));
   const R = [
-    [fN(c('cde')), `commandes cumulées${cu(c('cde'), c('oc'), fN)}`],
-    [fN(c('liv')), `VO livrés cumulés${cu(c('liv'), c('ol'), fN)}`],
-    [fE(c('marge')), `de marge cumulée${cu(c('marge'), c('om'), fE)}`],
-    [fE(c('caf')), `CA FI HT cumulé${cu(c('caf'), c('ocaf'), fE)}`],
-    [fP(pct(c('fi'), c('liv'))), `IP FI cumulé${oipc ? ` · obj. ${fP(oipc)}` : ''}`],
+    k3('Commandes', c('cde'), c('oc'), fN, '#7fa6d6'),
+    k3('VO livrés', c('liv'), c('ol'), fN, '#9fb8d8'),
+    k3('Marge réelle HT', c('marge'), c('om'), fE, '#e07a6e'),
+    k3('CA FI HT', c('caf'), c('ocaf'), fE, '#a48be0'),
+    ['IP FI', fP(ipC), oipc ? `objectif ${fP(oipc)}` : 'objectif non saisi', oipc && ipC != null ? ipC / oipc : null, '#6cc292'],
   ];
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
-  if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
-  else R.push([c('oc') ? fP(c('cde') / c('oc')) : '-', 'de l\'objectif commandes cumulé']);
+  if (st.sites.length === 1) R.push(['Non affectées', fN(na), 'commandes sans vendeur connu', null, na ? '#ff8a7a' : '#6cc292', na ? 'alert' : '']);
+  else R.push(['Marge moy. / VO', c('liv') ? fE(c('marge') / c('liv')) : '-', `sur ${nf0.format(c('liv'))} VO livrés`, null, '#6cc292']);
+  const cumul = `<div class="cumul"><div class="ch"><span>Cumul</span> janvier → ${mois} ${S.year}</div><div class="cg">${R.map(([l, v, o, p, col, cls]) => `<div class="ck ${cls || ''}" style="--c:${col}"><div class="cl">${l}</div><div class="cv">${v}</div><div class="co">${o}${p != null ? `<b class="${p >= 1 ? 'ok' : 'ko'}">${fP(p)}</b>` : ''}</div>${p != null ? `<div class="cb"><i style="width:${Math.min(100, Math.round(p * 100))}%"></i></div>` : ''}</div>`).join('')}</div></div>`;
   const liv = st.liv[m];
   const A = [['Frais admin', st.fa[m], '#7aa95c'], ['Eurodatacar', st.edc[m], '#4f9a8a'], ['Coyote', st.coy[m], '#ED7D31'],
     ['Bulbee', st.bul[m], '#d99a14'], ...(protech ? [['Protech', st.pro[m], '#7a5c99']] : []), ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
   const accRow = `<div class="accs" style="grid-template-columns:repeat(${A.length},1fr)">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div></div>`; }).join('')}</div>`;
   return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
-    <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois}</div><div class="ribbon">${R.map(r => `<div class="rb ${r[2] || ''}"><b>${r[0]}</b>${r[1]}</div>`).join('')}</div>`;
+    ${cumul}`;
 }
 
 // ---------- Récap d'un parc ----------
@@ -613,7 +656,7 @@ function objRows(tot, obj, f) {
 }
 // Un tableau par accessoire : nombre + IP (accessoires / VO livrés) côte à côte, par ligne (vendeur ou parc) et par mois
 const ACC_L = [['fa', 'Frais admin'], ['edc', 'Eurodatacar'], ['coy', 'Coyote'], ['pro', 'Protech'], ['bul', 'Bulbee'], ['rep', 'Reprises']];
-function accTables(rows) {
+function accTables(rows, pres) {
   const Z = Array(13).fill(0);
   const SEUIL = {fa: 0.8, coy: 0.5, bul: 0.5, edc: 0.5};   // rouge en dessous, vert au-dessus (pas de couleur pour Protech et Reprises)
   const COLA = {fa: '#5f8f42', edc: '#3d8273', coy: '#d9661c', pro: '#7a5c99', bul: '#b9810c', rep: '#3a63ad'};
@@ -621,7 +664,7 @@ function accTables(rows) {
   const ipk = (k, n, l) => !(l && n) || SEUIL[k] == null ? '' : n / l >= SEUIL[k] ? 'pos' : 'neg';
   let h = '';
   ACC_L.forEach(([k, lab]) => {
-    h += `<table class="mx" style="margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:190px">${'<col><col>'.repeat(13)}</colgroup><tr><th class="lab" rowspan="2" style="border-left:5px solid ${COLA[k]};background:${COLA[k]}1f"><div style="font-size:15px;font-weight:800;color:${COLA[k]};letter-spacing:.06em">${lab}</div>${SEUIL[k] != null ? `<div style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);font-size:12.5px;margin-top:2px">objectif IP ${Math.round(SEUIL[k] * 100)} %</div>` : ''}</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="2" class="tt" style="text-align:center">ANNÉE</th></tr>
+    h += `<table class="mx${pres ? ' pres' : ''}" style="margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:${pres ? 230 : 190}px">${'<col><col>'.repeat(13)}</colgroup><tr><th class="lab" rowspan="2" style="border-left:5px solid ${COLA[k]};background:${COLA[k]}1f"><div style="font-size:15px;font-weight:800;color:${COLA[k]};letter-spacing:.06em">${lab}</div>${SEUIL[k] != null ? `<div style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);font-size:12.5px;margin-top:2px">objectif IP ${Math.round(SEUIL[k] * 100)} %</div>` : ''}</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="2" class="tt" style="text-align:center">ANNÉE</th></tr>
       <tr>${MOIS_C.map(() => '<th class="pair">NB</th><th>IP</th>').join('')}<th class="tt">NB</th><th class="tt">IP</th></tr>`;
     rows.forEach(([name, x, cls]) => { const n = x[k] || Z, l = x.liv || Z;
       h += `<tr class="${cls || ''}"><td class="lab">${name}</td>${n.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi ${ipk(k, v, l[i + 1])}">${ipc(v, l[i + 1])}</td>`).join('')}<td class="tt">${fN(n[0])}</td><td class="tt ${ipk(k, n[0], l[0])}">${ipc(n[0], l[0])}</td></tr>`; });
@@ -673,6 +716,46 @@ function recapTable(st, sec) {
 }
 
 // ---------- Récap concession / Plaque ----------
+// ---------- Présentation des tableaux des totaux (Plaque EP, Total MB…) ----------
+const GRP_COL = {'MB': '#1d3557', 'FMC / NSA': '#d9661c', 'GVA': '#3a63ad'};
+const parcLab = s => { const o = siteObj(s); return `<span class="pdot" style="background:${GRP_COL[o.grp] || '#8792a6'}"></span><button class="lnk" onclick="pick('site','${s}')">${esc(o.label)}</button>`; };
+function pzHead(title, sub, col, kpis) {
+  return `<div class="pzh" style="--a:${col}"><div><div class="pzt">${title} <span>· ${esc(selLabel())} ${S.year}</span></div><div class="pzs">${sub}</div></div><div class="pzk">${kpis.map(([l, v, c]) => `<div><div class="kl">${l}</div><div class="kv ${c || ''}">${v}</div></div>`).join('')}</div></div>`;
+}
+function presTable(K, per, st, f, val, title) {
+  const COL = {cde: '#3a63ad', liv: '#2b8cb0', marge: '#c0392b', caf: '#5b3fb0', tfi: '#2e7d4f', am: '#8a6bc9'}[K] || '#1d3557';
+  const SUB = {cde: 'Par parc et par mois · date de commande', liv: 'VO livrés par parc et par mois · date de facture', marge: 'Marge réelle HT par parc et par mois · date de facture',
+    caf: 'CA FI HT par parc et par mois · date de facture', tfi: 'Dossiers financés / VO livrés · rouge sous l\'objectif (40 % par défaut), vert au-dessus', am: 'Ventes autres marques par parc et par mois · date de facture'}[K];
+  const OK = {cde: 'oc', liv: 'ol', marge: 'om', caf: 'ocaf', tfi: 'oip'}[K];
+  const hex = COL.slice(1), rgb = [0, 2, 4].map(i => parseInt(hex.substr(i, 2), 16)).join(',');
+  const mx = Math.max(0, ...per.flatMap(([, x]) => [...Array(12)].map((_, i) => val(x, i + 1) || 0)));
+  const tmax = Math.max(0, ...per.map(([, x]) => val(x, 0) || 0));
+  const heat = v => K === 'tfi' || !v || !mx ? '' : `background:rgba(${rgb},${(0.05 + 0.32 * v / mx).toFixed(2)})`;
+  const ipCls = (v, o) => v == null ? 'z' : v >= (o || 0.4) ? 'pos' : 'neg';
+  const objOf = x => OK ? x[OK][0] : 0;
+  const pctOf = x => { const o = objOf(x), v = val(x, 0); return o && v != null ? v / o : null; };
+  const chip = p => p == null ? '<span class="chp">-</span>' : `<span class="chp ${p >= 1 ? 'ok' : 'ko'}">${fP(p)}</span>`;
+  const hasObj = !!OK;
+  let h = `<table class="mx pres"><tr><th class="lab">Parc</th>${MOIS_C.map(m => `<th>${m}</th>`).join('')}<th class="tt">${K === 'tfi' ? 'ANNÉE' : 'TOTAL'}</th>${hasObj ? '<th>OBJECTIF</th><th>% OBJ.</th>' : ''}</tr>`;
+  per.forEach(([s, x]) => {
+    const tv = val(x, 0);
+    h += `<tr><td class="lab">${parcLab(s)}</td>${[...Array(12)].map((_, i) => { const v = val(x, i + 1); return K === 'tfi' ? `<td class="${ipCls(v, x.oip[i + 1])}">${fP(v)}</td>` : `<td class="${v ? '' : 'z'}" style="${heat(v)}">${f(v)}</td>`; }).join('')}
+      <td class="tt"><div class="tbar">${K !== 'tfi' && tmax ? `<i style="width:${Math.max(tv ? 3 : 0, Math.round(46 * (tv || 0) / tmax))}px;background:${COL}"></i>` : ''}<span class="${K === 'tfi' ? ipCls(tv, x.oip[0]) : ''}">${f(tv)}</span></div></td>${hasObj ? `<td class="ob">${objOf(x) ? f(objOf(x)) : '-'}</td><td>${chip(pctOf(x))}</td>` : ''}</tr>`;
+  });
+  h += `<tr class="sub"><td class="lab">Total ${esc(selLabel())}</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td>${hasObj ? `<td>${objOf(st) ? f(objOf(st)) : '-'}</td><td>${chip(pctOf(st))}</td>` : ''}</tr>`;
+  if (OK) {
+    const ob = st[OK], pc = [...Array(13)].map((_, i) => { const v = val(st, i); return ob[i] && v != null ? v / ob[i] : null; });
+    h += `<tr class="obj"><td class="lab">Objectif</td>${ob.slice(1).map(v => `<td>${v ? f(v) : '-'}</td>`).join('')}<td class="tt">${ob[0] ? f(ob[0]) : '-'}</td><td></td><td></td></tr>`;
+    h += `<tr class="ec"><td class="lab">% réalisation</td>${pc.slice(1).map(v => `<td>${v == null ? '<span class="z">-</span>' : chip(v)}</td>`).join('')}<td class="tt">${chip(pc[0])}</td><td></td><td></td></tr>`;
+  }
+  h += '</table>';
+  // Chiffres clés en tête
+  const tot = val(st, 0), best = per.filter(([, x]) => val(x, 0)).sort((a, b) => val(b[1], 0) - val(a[1], 0))[0];
+  const kp = [[K === 'tfi' ? 'IP FI année' : 'Total année', f(tot)]];
+  if (OK && objOf(st)) kp.push(['Objectif', f(objOf(st))], ['Réalisation', fP(pctOf(st)), pctOf(st) >= 1 ? 'ok' : 'ko']);
+  if (best) kp.push([K === 'tfi' ? 'Meilleur IP' : '1er parc', `${esc(siteObj(best[0]).label)} · ${f(val(best[1], 0))}`]);
+  return `<div class="pz">${pzHead(title, SUB, COL, kp)}${h}</div>`;
+}
 function recapTotal() {
   const sites = selSites();
   const st = stats(sites, S.year);
@@ -681,18 +764,14 @@ function recapTotal() {
   const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : (x[K] || [])[m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
-  let t = `<table class="mx">${hdr((secs.find(s => s[0] === K) || secs[0])[1])}`;
-  per.forEach(([s, x]) => t += `<tr><td class="lab"><button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button></td>${[...Array(12)].map((_, i) => { const v = val(x, i + 1); return `<td class="${v ? '' : 'z'}">${f(v)}</td>`; }).join('')}<td class="tt">${f(val(x, 0))}</td></tr>`);
-  t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
-  if (K === 'cde' || K === 'liv' || K === 'marge' || K === 'caf') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om', caf: 'ocaf'}[K]], f);
-  t += '</table>';
-  if (K === 'acc') t = accTables([...per.map(([s, x]) => [`<button class="lnk" onclick="pick('site','${s}')">${esc(siteObj(s).label)}</button>`, x, '']), ['Total', st, 'sub']]);
-  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
+  const t = K === 'acc' ? '' : presTable(K, per, st, f, val, (secs.find(s => s[0] === K) || secs[0])[1]);
+  const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', 'Nombre et IP (accessoires / VO livrés) par parc et par mois · date de facture', '#d9661c', [])}${accTables([...per.map(([s, x]) => [parcLab(s), x, '']), ['Total', st, 'sub']], true)}</div>` : '';
+  let syn = `<table class="mx pres"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
-  per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
+  per.forEach(([s, x]) => syn += sl(parcLab(s), x));
   syn += sl('Total', st, 'sub') + '</table>';
   return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul</span></div>` + tilesHtml(st, true) +
-    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div><button class="btn" onclick="exportTotal()">Exporter ${esc(selLabel())} en Excel</button></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto">${syn}</div>` : ''}</div>`;
+    `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div><button class="btn" onclick="exportTotal()">Exporter ${esc(selLabel())} en Excel</button></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${K === 'acc' ? tAcc : t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto"><div class="pz">${pzHead('Synthèse par parc', `Cumul de l'année ${S.year}`, '#1d3557', [])}${syn}</div></div>` : ''}</div>`;
 }
 
 // ====================================================================
