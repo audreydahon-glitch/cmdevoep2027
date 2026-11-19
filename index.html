@@ -270,7 +270,7 @@ const MARGE_PLUS = {'mb-villeneuve': 500, 'mb-cannes': 500};
 const MARGE_PLUS_EXCLUS = ['CESSION', 'ALCOPA'];   // pour ces lignes, la marge réelle se saisit à la main
 const MARQ_DEF = {'MB': ['MERCEDES', 'AM'], 'FMC / NSA': ['FORD', 'NISSAN', 'AM'], 'GVA': ['VOLKSWAGEN', 'AUDI', 'AM'], 'GEELY': ['GEELY', 'AM'], 'BYD': ['BYD', 'AM']};
 // Entités par parc (réglables dans « Vendeurs & objectifs ») et marque associée à chaque entité
-const ENT_DEF = {'mb-villeneuve': ['MB', 'GEELY'], 'mb-roquebrune': ['MB', 'VUL', 'BYD', 'VO'], 'mb-toulon': ['MB', 'VUL', 'BYD', 'VO'], 'nsa-cannes': ['NSA', 'FMC', 'GEELY'], 'fmc-nice': ['FMC', 'NSA']};
+const ENT_DEF = {'mb-villeneuve': ['MB', 'GEELY'], 'mb-roquebrune': ['MB', 'VUL', 'BYD'], 'mb-toulon': ['MB', 'VUL', 'BYD'], 'nsa-cannes': ['NSA', 'FMC', 'GEELY'], 'fmc-nice': ['FMC', 'NSA']};
 const ENT_MARQ = {MB: 'MERCEDES', VUL: 'MERCEDES', VO: 'AM', GEELY: 'GEELY', BYD: 'BYD', NSA: 'NISSAN', FMC: 'FORD', AUDI: 'AUDI', VW: 'VOLKSWAGEN'};
 const entList = site => { const l = ((S.params[site] || {}).entites) || []; return l.length ? l : (ENT_DEF[site] || []); };
 const marqList0 = site => { const e = entList(site); return e.length ? [...new Set([...e.map(x => ENT_MARQ[x] || x), 'AM'])] : null; };
@@ -537,28 +537,34 @@ function stats(sites, year, ent) {
 // Met en gras les chiffres d'un texte (ex. « objectif 600 · 85 % »)
 const boldNums = t => String(t).replace(/-?\d[\d\u202f\u00a0 ]*(?:[.,]\d+)?(?:\s?[%€])?/g, m => `<b>${m.trim()}</b> `).replace(/ $/, '');
 // ---------- Tuiles + bandeau du mois ----------
-function tilesHtml(st) {
+function tilesHtml(st0) {
   const m = S.month;
+  // Les tuiles et cartes sont cumulées de janvier au mois sélectionné (comparables à l'objectif à date)
+  const st = Object.assign({}, st0);
+  ['cde', 'liv', 'fi', 'marge', 'caf', 'coy', 'pro', 'bul', 'am', 'fa', 'edc', 'rep'].forEach(k => { st[k] = st0[k].slice(); st[k][0] = st0[k].slice(1, m + 1).reduce((x, y) => x + y, 0); });
   const pct = (a, b) => b ? a / b : null;
   const bar = p => p == null ? '' : `<div class="bar2"><i class="${p >= 1 ? '' : 'ko'}" style="width:${Math.min(100, Math.round(p * 100))}%"></i></div>`;
   const objTxt = (a, b, f) => b ? `objectif ${f(b)} · ${fP(a / b)}` : 'objectif non saisi';
+  const ytd = a => a.slice(1, m + 1).reduce((x, y) => x + y, 0);   // objectif cumulé de janvier au mois sélectionné
+  const oc = ytd(st.oc), ol = ytd(st.ol), om = ytd(st.om);
+  const mo = (a, o, f) => o ? ` · obj. ${f(o)} (${fP(a / o)})` : '';
   const tf = pct(st.fi[0], st.liv[0]);
   const acc = st.coy[0] + st.pro[0] + st.bul[0];
   const T = [
-    ['dark', 'Commandes', fN(st.cde[0]) , objTxt(st.cde[0], st.oc[0], fN), bar(pct(st.cde[0], st.oc[0]))],
-    ['', 'VO livrés', fN(st.liv[0]), objTxt(st.liv[0], st.ol[0], fN), bar(pct(st.liv[0], st.ol[0]))],
-    ['ac" style="--c:#2e7d4f', 'Taux FI', fP(tf), `${nf0.format(st.fi[0])} financements`, ''],
-    ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[0]), objTxt(st.marge[0], st.om[0], fE), bar(pct(st.marge[0], st.om[0]))],
-    ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[0] ? fE(st.marge[0] / st.liv[0]) : '-', `sur ${nf0.format(st.liv[0])} VO livrés`, ''],
+    ['dark', 'Commandes', fN(st.cde[0]) , objTxt(st.cde[0], oc, fN), bar(pct(st.cde[0], oc))],
+    ['', 'VO livrés', fN(st.liv[0]), objTxt(st.liv[0], ol, fN), bar(pct(st.liv[0], ol))],
     ['ac" style="--c:#5b3fb0', 'CA financement', fE(st.caf[0]), `${nf0.format(st.fi[0])} dossiers financés`, ''],
+    ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), `${nf0.format(st.fi[0])} financements`, ''],
+    ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[0]), objTxt(st.marge[0], om, fE), bar(pct(st.marge[0], om))],
+    ['ac" style="--c:#2e7d4f', 'Marge moy. / VO', st.liv[0] ? fE(st.marge[0] / st.liv[0]) : '-', `sur ${nf0.format(st.liv[0])} VO livrés`, ''],
   ];
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
   const R = [
-    [fN(st.cde[m]), `commandes en ${MOIS[m - 1].toLowerCase()}`],
-    [fN(st.liv[m]), `VO livrés en ${MOIS[m - 1].toLowerCase()}`],
-    [fE(st.marge[m]), 'de marge sur le mois'],
-    [fP(pct(st.fi[m], st.liv[m])), 'taux FI du mois'],
+    [fN(st.cde[m]), `commandes en ${MOIS[m - 1].toLowerCase()}${mo(st.cde[m], st.oc[m], fN)}`],
+    [fN(st.liv[m]), `VO livrés en ${MOIS[m - 1].toLowerCase()}${mo(st.liv[m], st.ol[m], fN)}`],
+    [fE(st.marge[m]), `de marge sur le mois${mo(st.marge[m], st.om[m], fE)}`],
     [fE(st.caf[m]), 'CA financement du mois'],
+    [fP(pct(st.fi[m], st.liv[m])), 'IP FI du mois'],
   ];
   if (st.sites.length === 1) R.push([fN(na), 'commandes non affectées', na ? 'alert' : '']);
   else R.push([st.oc[m] ? fP(st.cde[m] / st.oc[m]) : '-', 'de l\'objectif commandes du mois']);
@@ -578,7 +584,7 @@ function recapSite(site) {
   const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
   const sansEnt = S.ent ? S.rows.filter(r => r.site === site && !r.annulation && !r.entite && (ym(r.date_cde)[0] === S.year || ym(r.date_fact)[0] === S.year)).length : 0;
   const entBar = ents.length > 1 ? `<div class="seg" style="margin-bottom:12px">${[null, ...ents].map(e => `<button aria-pressed="${S.ent === e}" onclick="S.ent=${e ? `'${e}'` : 'null'};renderMain()">${e ? esc(e) : 'Global site'}</button>`).join('')}</div>${S.ent && sansEnt ? `<span class="note" style="margin-left:12px">${sansEnt} commande(s) sans entité ne sont pas comptées dans cette vue</span>` : ''}` : '';
-  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)}${S.ent ? ' · ' + esc(S.ent) : ''} · ${S.year}</h2><span class="sub">Cumul ${S.year} · mois en cours : ${MOIS[S.month - 1].toLowerCase()}${S.ent ? ' · objectifs : vue Global' : ''}</span></div>` + entBar;
+  const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)}${S.ent ? ' · ' + esc(S.ent) : ''} · ${S.year}</h2><span class="sub">Cumul janvier → ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : mois de ${MOIS[S.month - 1].toLowerCase()}${S.ent ? ' · objectifs : vue Global' : ''}</span></div>` + entBar;
   return head + tilesHtml(st) + `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.recapSec === s[0]}" onclick="S.recapSec=S.recapSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}</div>
     <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div>${S.recapSec ? `<div style="overflow:auto">${recapTable(st, S.recapSec)}</div>` : ''}</div>`;
 }
@@ -609,12 +615,12 @@ function recapTable(st, sec) {
   }
   if (sec === 'liv') {
     let h = `<table class="mx"><tr><th class="lab" rowspan="2">Livraisons (date facture)</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="3" class="tt" style="text-align:center">TOTAL</th></tr>
-      <tr>${MOIS_C.map(() => '<th class="pair">LIV</th><th>FI</th>').join('')}<th class="tt">LIV</th><th>FI</th><th>TAUX FI</th></tr>`;
+      <tr>${MOIS_C.map(() => '<th class="pair">LIV</th><th>FI</th>').join('')}<th class="tt">LIV</th><th>FI</th><th>IP FI</th></tr>`;
     const row = (lab, liv, fi, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td>${liv.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi">${fN(fi[i + 1])}</td>`).join('')}<td class="tt">${fN(liv[0])}</td><td class="tt">${fN(fi[0])}</td><td class="tt">${liv[0] ? fP(fi[0] / liv[0]) : '-'}</td></tr>`;
     V.filter(v => !isHV(v)).forEach(v => { const x = st.v[v] || {}; h += row(vlab(v), x.liv || Array(13).fill(0), x.fi || Array(13).fill(0), v === '__NA' ? 'na' : ''); });
     h += row('Total', st.liv, st.fi, 'sub');
     h += `<tr class="obj"><td class="lab">Objectif livraisons</td>${st.ol.slice(1).map(v => `<td colspan="2" style="text-align:center">${fN(v)}</td>`).join('')}<td class="tt">${fN(st.ol[0])}</td><td class="tt"></td><td class="tt"></td></tr>`;
-    h += `<tr class="ec"><td class="lab">Taux FI</td>${st.liv.slice(1).map((v, i) => `<td colspan="2" style="text-align:center">${v ? fP(st.fi[i + 1] / v) : '-'}</td>`).join('')}<td class="tt"></td><td class="tt"></td><td class="tt">${st.liv[0] ? fP(st.fi[0] / st.liv[0]) : '-'}</td></tr>`;
+    h += `<tr class="ec"><td class="lab">IP FI</td>${st.liv.slice(1).map((v, i) => `<td colspan="2" style="text-align:center">${v ? fP(st.fi[i + 1] / v) : '-'}</td>`).join('')}<td class="tt"></td><td class="tt"></td><td class="tt">${st.liv[0] ? fP(st.fi[0] / st.liv[0]) : '-'}</td></tr>`;
     h += '</table>';
     // IP FI = dossiers financés / VO livrés, par vendeur et par mois
     const ip = (fi, liv) => liv.map((v, i) => v ? fi[i] / v : null);
@@ -659,7 +665,7 @@ function recapTotal() {
   const sites = selSites();
   const st = stats(sites, S.year);
   const per = sites.map(s => [s, stats([s], S.year)]);
-  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA financement'],['tfi','Taux FI']];
+  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA financement'],['tfi','IP FI']];
   const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : x[K][m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
@@ -668,11 +674,11 @@ function recapTotal() {
   t += `<tr class="sub"><td class="lab">Total</td>${[...Array(12)].map((_, i) => `<td>${f(val(st, i + 1))}</td>`).join('')}<td class="tt">${f(val(st, 0))}</td></tr>`;
   if (K === 'cde' || K === 'liv' || K === 'marge') t += objRows(st[K], st[{cde: 'oc', liv: 'ol', marge: 'om'}[K]], f);
   t += '</table>';
-  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>Taux FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>CA financement</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
-  const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fE(x.caf[0])}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
+  let syn = `<table class="mx"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA financement</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
+  const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(esc(siteObj(s).label), x));
   syn += sl('Total', st, 'sub') + '</table>';
-  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · mois en cours : ${MOIS[S.month - 1].toLowerCase()}</span></div>` + tilesHtml(st) +
+  return `<div class="ptitle"><h2>${esc(selLabel())} · ${S.year}</h2><span class="sub">${sites.length} parcs · cumul janvier → ${MOIS[S.month - 1].toLowerCase()} ${S.year}</span></div>` + tilesHtml(st) +
     `<div class="card"><div class="secs"><div class="seg">${secs.map(s => `<button aria-pressed="${S.totSec === s[0]}" onclick="S.totSec=S.totSec==='${s[0]}'?null:'${s[0]}';renderMain()">${s[1]}</button>`).join('')}<button aria-pressed="${S.totSec === 'syn'}" onclick="S.totSec=S.totSec==='syn'?null:'syn';renderMain()">Synthèse par parc</button></div></div>${S.totSec && S.totSec !== 'syn' ? `<div style="overflow:auto">${t}</div>` : ''}${S.totSec === 'syn' ? `<div style="overflow:auto">${syn}</div>` : ''}</div>`;
 }
 
