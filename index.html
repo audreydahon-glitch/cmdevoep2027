@@ -195,14 +195,14 @@ body.narrow .cumul .cg{grid-template-columns:repeat(2,1fr);row-gap:14px}
 table.xl{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:11px;table-layout:fixed;width:100%}
 table.xl th,table.xl td{border:1px solid #c8c8c8;padding:3px 3px;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis}
 table.xl thead th{overflow-wrap:anywhere;text-overflow:clip}
-table.xl thead th{position:sticky;z-index:2;font-size:8px;font-weight:400;line-height:1.15;white-space:normal;vertical-align:bottom;padding:4px 3px}
+table.xl thead th{position:sticky;z-index:2;font-size:8px;font-weight:400;line-height:1.15;white-space:normal;vertical-align:middle;padding:4px 3px}
 table.xl thead tr.g th{top:0;height:20px;background:#fff;border:0}
 table.xl thead tr.g th.acc{border:1px solid #000;font-size:10px;background:#fff}
 table.xl thead tr.h th{top:0;height:52px}
 table.xl tbody tr{cursor:pointer}
 table.xl tbody tr:hover td{background:#eaf1ff}
-table.xl td.l{text-align:left}
-table.xl td.r{text-align:right}
+table.xl td.l,table.xl td.r{text-align:center}   /* tout centré, comme demandé */
+table.xl tbody td{vertical-align:middle}
 table.xl tr.annul td{color:#9aa3b2;text-decoration:line-through}
 table.xl tr.annul td.u{text-decoration:none;color:#fff;background:#ff0000}
 table.xl td.neg{color:#c00000}
