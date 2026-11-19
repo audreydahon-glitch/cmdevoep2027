@@ -97,42 +97,52 @@ body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .rb b{font-family:var(--f-d);font-size:24px;font-weight:800;margin-right:6px;color:var(--ink);font-stretch:92%}
 .rb.alert b{color:var(--neg)}
 .pz{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:4px 0 6px;background:#fff}
-.pzh{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 20px;background:linear-gradient(135deg,#13233d,#1d3557 65%,#24406a);color:#fff;border-bottom:4px solid var(--a)}
-.pzt{font-family:var(--f-d);font-size:22px;font-weight:800;font-stretch:92%;letter-spacing:-.01em}.pzt span{font-weight:500;color:#aebdd3;font-size:16px}
-.pzs{font-size:13px;color:#aebdd3;margin-top:3px}
-.pzk{display:flex;gap:26px}.pzk>div{border-left:1px solid rgba(255,255,255,.18);padding-left:16px}
-.pzk .kl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#aebdd3;font-weight:700}
-.pzk .kv{font-family:var(--f-d);font-size:20px;font-weight:700;margin-top:2px;white-space:nowrap}.pzk .kv.ok{color:#7ddc9f}.pzk .kv.ko{color:#ffb4a8}
+.pzh{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:14px 20px;background:#fff;color:var(--ink);border-left:5px solid var(--a);border-bottom:1px solid var(--line)}
+.pzt{font-family:var(--f-d);font-size:22px;font-weight:800;font-stretch:92%;letter-spacing:-.01em}.pzt span{font-weight:500;color:var(--muted);font-size:16px}
+.pzs{font-size:13px;color:var(--muted);margin-top:3px}
+.pzk{display:flex;gap:26px}.pzk>div{border-left:1px solid var(--line);padding-left:16px}
+.pzk .kl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pzk .kv{font-family:var(--f-d);font-size:20px;font-weight:700;margin-top:2px;white-space:nowrap}.pzk .kv.ok{color:var(--pos)}.pzk .kv.ko{color:var(--neg)}
 .mx.pres{width:100%;border-collapse:separate;border-spacing:0}
 .mx.pres th{background:#eef2f8;color:#2b3a52;font-size:11px;padding-top:10px;padding-bottom:10px}
 .mx.pres td{padding-top:10px;padding-bottom:10px;font-size:13.5px}
 .mx.pres tr:not(.sub):not(.obj):not(.ec):hover td{background-color:#f6f9ff}
 .mx.pres td.lab{font-weight:600}
 .mx.pres .pdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:9px;vertical-align:1px}
-.mx.pres tr.sub td{background:#1d3557!important;color:#fff;font-size:14px;border-top:0}
-.mx.pres tr.sub td .chp{background:rgba(255,255,255,.16);color:#fff}
+.mx.pres tr.sub td{background:#eef2f8!important;color:var(--ink);font-size:14px;border-top:1px solid var(--line)}
+
 .mx.pres tr.obj td{background:#fbf8f0;color:#7a6a45;font-style:italic}
 .mx.pres td.tt{min-width:150px}
 .mx.pres .tbar{display:flex;justify-content:space-between;align-items:center;gap:10px;height:22px}
 .mx.pres .tbar i{display:block;height:8px;border-radius:4px;opacity:.6;flex:none}
 .mx.pres .tbar span{position:relative;font-weight:800}
 .mx.pres td.ob{color:var(--muted)}
+.ach{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 20px 8px}
+body.narrow .ach{grid-template-columns:1fr}
+.acg{border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:12px 14px 10px;background:#fff}
+.acgh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.acgh b{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--c);font-weight:800}.acgh span{font-size:12px;color:var(--muted);font-weight:600}
+.acr{display:grid;grid-template-columns:196px 1fr 44px 58px;align-items:center;gap:8px;padding:4px 0;font-size:12.5px}
+.acn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}.acn .rk{display:inline-block;width:18px;color:var(--muted);font-weight:700}
+.act{position:relative;height:12px;background:#f0f2f6;border-radius:6px}
+.act i{display:block;height:100%;border-radius:6px}
+.act em{position:absolute;top:-3px;bottom:-3px;width:2px;background:#0e1a2b;opacity:.55;z-index:1}
+.acv{text-align:right;font-weight:800}.acx{text-align:right;color:var(--muted);font-size:11.5px;white-space:nowrap}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
 .chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
 
-.cumul{background:linear-gradient(135deg,#13233d 0%,#1d3557 60%,#24406a 100%);border-radius:14px;padding:16px 20px 18px;margin-bottom:18px;color:#fff;box-shadow:0 6px 18px rgba(14,26,43,.18)}
-.cumul .ch{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#aebdd3;font-weight:600;margin-bottom:12px}
-.cumul .ch span{color:#fff;font-weight:800;margin-right:4px}
+.cumul{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 20px 18px;margin-bottom:18px;box-shadow:0 1px 3px rgba(14,26,43,.05)}
+.cumul .ch{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+.cumul .ch span{color:var(--ink);font-weight:800;margin-right:4px}
 .cumul .cg{display:grid;grid-template-columns:repeat(6,1fr);gap:0}
 body.narrow .cumul .cg{grid-template-columns:repeat(2,1fr);row-gap:14px}
-.cumul .ck{padding:2px 18px;border-left:1px solid rgba(255,255,255,.14)}
+.cumul .ck{padding:2px 18px;border-left:1px solid var(--line)}
 .cumul .ck:first-child{border-left:0;padding-left:0}
 .cumul .cl{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);font-weight:700}
-.cumul .cv{font-family:var(--f-d);font-size:30px;font-weight:700;font-stretch:92%;margin:4px 0 2px;color:#fff;white-space:nowrap}
-.cumul .ck.alert .cv{color:#ff8a7a}
-.cumul .co{font-size:13px;color:#c5d1e3;display:flex;justify-content:space-between;gap:6px}
-.cumul .co b{font-weight:700}.cumul .co b.ok{color:#7ddc9f}.cumul .co b.ko{color:#ffb4a8}
-.cumul .cb{height:5px;border-radius:3px;background:rgba(255,255,255,.14);margin-top:8px;overflow:hidden}
+.cumul .cv{font-family:var(--f-d);font-size:30px;font-weight:700;font-stretch:92%;margin:4px 0 2px;color:var(--ink);white-space:nowrap}
+.cumul .ck.alert .cv{color:var(--neg)}
+.cumul .co{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.cumul .co b{font-weight:700}.cumul .co b.ok{color:var(--pos)}.cumul .co b.ko{color:var(--neg)}
+.cumul .cb{height:5px;border-radius:3px;background:#eef1f5;margin-top:8px;overflow:hidden}
 .cumul .cb i{display:block;height:100%;background:var(--c);border-radius:3px}
 
 .mx.lfi td,.mx.lfi th{padding-left:2px;padding-right:4px;font-size:12.5px}.mx.lfi td.lab{font-size:13px}.mx.lfi td.fi.pos,.mx.lfi td.fi.neg{font-weight:500}
@@ -717,10 +727,22 @@ function recapTable(st, sec) {
 
 // ---------- Récap concession / Plaque ----------
 // ---------- Présentation des tableaux des totaux (Plaque EP, Total MB…) ----------
-const GRP_COL = {'MB': '#1d3557', 'FMC / NSA': '#d9661c', 'GVA': '#3a63ad'};
+const GRP_COL = {'MB': '#4a5568', 'FMC / NSA': '#d9661c', 'GVA': '#3a63ad'};
 const parcLab = s => { const o = siteObj(s); return `<span class="pdot" style="background:${GRP_COL[o.grp] || '#8792a6'}"></span><button class="lnk" onclick="pick('site','${s}')">${esc(o.label)}</button>`; };
 function pzHead(title, sub, col, kpis) {
   return `<div class="pzh" style="--a:${col}"><div><div class="pzt">${title} <span>· ${esc(selLabel())} ${S.year}</span></div><div class="pzs">${sub}</div></div><div class="pzk">${kpis.map(([l, v, c]) => `<div><div class="kl">${l}</div><div class="kv ${c || ''}">${v}</div></div>`).join('')}</div></div>`;
+}
+// Graphiques accessoires : classement des parcs par IP (cumul de l'année), avec le seuil d'objectif
+function accCharts(per) {
+  const SEUIL = {fa: 0.8, coy: 0.5, bul: 0.5, edc: 0.5};
+  const COLA = {fa: '#5f8f42', edc: '#3d8273', coy: '#d9661c', pro: '#7a5c99', bul: '#b9810c', rep: '#3a63ad'};
+  return `<div class="ach">${ACC_L.map(([k, lab]) => {
+    const rows = per.map(([s, x]) => [s, x[k][0], x.liv[0], x.liv[0] ? x[k][0] / x.liv[0] : null]).sort((a, b) => (b[3] ?? -1) - (a[3] ?? -1));
+    const sc = Math.max(1, SEUIL[k] || 0, ...rows.map(r => r[3] || 0));
+    const sd = SEUIL[k];
+    return `<div class="acg" style="--c:${COLA[k]}"><div class="acgh"><b>${lab}</b>${sd != null ? `<span>objectif IP ${Math.round(sd * 100)} %</span>` : ''}</div>
+      ${rows.map(([s, n, l, p], i) => { const col = p == null ? '#c3cad6' : sd == null ? COLA[k] : p >= sd ? '#2e9a5b' : '#d0453a';
+        return `<div class="acr"><div class="acn"><span class="rk">${i + 1}</span>${esc(siteObj(s).label)}</div><div class="act">${sd != null ? `<em style="left:${(100 * sd / sc).toFixed(1)}%"></em>` : ''}<i style="width:${p == null ? 0 : (100 * p / sc).toFixed(1)}%;background:${col}"></i></div><div class="acv" style="color:${p == null ? 'var(--muted)' : col}">${p == null ? '-' : fP(p)}</div><div class="acx">${l ? `${nf0.format(n)} / ${nf0.format(l)}` : '0 livré'}</div></div>`; }).join('')}</div>`; }).join('')}</div>`;
 }
 function presTable(K, per, st, f, val, title) {
   const COL = {cde: '#3a63ad', liv: '#2b8cb0', marge: '#c0392b', caf: '#5b3fb0', tfi: '#2e7d4f', am: '#8a6bc9'}[K] || '#1d3557';
@@ -765,7 +787,7 @@ function recapTotal() {
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : (x[K] || [])[m];
   const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
   const t = K === 'acc' ? '' : presTable(K, per, st, f, val, (secs.find(s => s[0] === K) || secs[0])[1]);
-  const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', 'Nombre et IP (accessoires / VO livrés) par parc et par mois · date de facture', '#d9661c', [])}${accTables([...per.map(([s, x]) => [parcLab(s), x, '']), ['Total', st, 'sub']], true)}</div>` : '';
+  const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', 'Classement des parcs par IP (accessoires / VO livrés), cumul de l\'année · vert : objectif atteint, rouge : en dessous, trait : objectif', '#d9661c', [])}${accCharts(per)}<div class="pzs" style="padding:6px 20px 10px;font-weight:600;color:var(--ink)">Détail par mois</div>${accTables([...per.map(([s, x]) => [parcLab(s), x, '']), ['Total', st, 'sub']], true)}</div>` : '';
   let syn = `<table class="mx pres"><tr><th class="lab">Parc</th><th>Cde</th><th>Obj. cde</th><th>% cde</th><th>Livrés</th><th>FI</th><th>CA FI HT</th><th>IP FI</th><th>Marge</th><th>Obj. marge</th><th>% marge</th><th>Marge moy./VO</th><th>Coyote</th><th>Protech</th><th>Bulbee</th></tr>`;
   const sl = (lab, x, cls) => `<tr class="${cls || ''}"><td class="lab">${lab}</td><td>${fN(x.cde[0])}</td><td>${fN(x.oc[0])}</td><td class="${x.oc[0] ? (x.cde[0] >= x.oc[0] ? 'pos' : 'neg') : ''}">${x.oc[0] ? fP(x.cde[0] / x.oc[0]) : '-'}</td><td>${fN(x.liv[0])}</td><td>${fN(x.fi[0])}</td><td>${fE(x.caf[0])}</td><td>${x.liv[0] ? fP(x.fi[0] / x.liv[0]) : '-'}</td><td>${fE(x.marge[0])}</td><td>${fE(x.om[0])}</td><td class="${x.om[0] ? (x.marge[0] >= x.om[0] ? 'pos' : 'neg') : ''}">${x.om[0] ? fP(x.marge[0] / x.om[0]) : '-'}</td><td>${x.liv[0] ? fE(x.marge[0] / x.liv[0]) : '-'}</td><td>${fN(x.coy[0])}</td><td>${fN(x.pro[0])}</td><td>${fN(x.bul[0])}</td></tr>`;
   per.forEach(([s, x]) => syn += sl(parcLab(s), x));
