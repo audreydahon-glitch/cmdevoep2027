@@ -650,11 +650,12 @@ function recapTable(st, sec) {
     const VV = V.filter(v => !isHV(v)), Z = Array(13).fill(0);
     // Seuils d'IP : rouge en dessous, vert au-dessus (pas de couleur pour Protech et Reprises)
     const SEUIL = {fa: 0.8, coy: 0.5, bul: 0.5, edc: 0.5};
+    const COLA = {fa: '#5f8f42', edc: '#3d8273', coy: '#d9661c', pro: '#7a5c99', bul: '#b9810c', rep: '#3a63ad'};
     const ipc = (n, l) => l && n ? fP(n / l) : '-';
     const ipk = (k, n, l) => !(l && n) || SEUIL[k] == null ? '' : n / l >= SEUIL[k] ? 'pos' : 'neg';
     let h = '';
     [['fa', 'Frais admin'], ['edc', 'Eurodatacar'], ['coy', 'Coyote'], ['pro', 'Protech'], ['bul', 'Bulbee'], ['rep', 'Reprises']].forEach(([k, lab]) => {
-      h += `<table class="mx" style="margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:170px">${'<col><col>'.repeat(13)}</colgroup><tr><th class="lab" rowspan="2">${lab}${SEUIL[k] != null ? `<div style="font-weight:500;text-transform:none;letter-spacing:0">objectif IP ${Math.round(SEUIL[k] * 100)} %</div>` : ''}</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="2" class="tt" style="text-align:center">ANNÉE</th></tr>
+      h += `<table class="mx" style="margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:170px">${'<col><col>'.repeat(13)}</colgroup><tr><th class="lab" rowspan="2" style="border-left:5px solid ${COLA[k]};background:${COLA[k]}1f"><div style="font-size:15px;font-weight:800;color:${COLA[k]};letter-spacing:.06em">${lab}</div>${SEUIL[k] != null ? `<div style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);font-size:12.5px;margin-top:2px">objectif IP ${Math.round(SEUIL[k] * 100)} %</div>` : ''}</th>${MOIS_C.map(m => `<th colspan="2" class="pair" style="text-align:center">${m}</th>`).join('')}<th colspan="2" class="tt" style="text-align:center">ANNÉE</th></tr>
         <tr>${MOIS_C.map(() => '<th class="pair">NB</th><th>IP</th>').join('')}<th class="tt">NB</th><th class="tt">IP</th></tr>`;
       const row = (name, n, l, cls) => `<tr class="${cls || ''}"><td class="lab">${name}</td>${n.slice(1).map((v, i) => `<td class="${v ? '' : 'z'}" style="border-left:1px solid var(--line2)">${fN(v)}</td><td class="fi ${ipk(k, v, l[i + 1])}">${ipc(v, l[i + 1])}</td>`).join('')}<td class="tt">${fN(n[0])}</td><td class="tt ${ipk(k, n[0], l[0])}">${ipc(n[0], l[0])}</td></tr>`;
       VV.forEach(v => { const x = st.v[v] || {}; h += row(vlab(v), x[k] || Z, x.liv || Z, v === '__NA' ? 'na' : ''); });
