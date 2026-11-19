@@ -307,11 +307,11 @@ const COLS = [
   ['bulbbee','BULBEE','bool','#ED7D31'],['annulation','ANNULATION','bool','#FF0000','#fff'],['date_fact','DATE DE FACTURE','date','#8EA9DB'],
   ['garantie','GARANTIE','gar','#70AD47'],['fi','CRÉDIT','bool','#8EA9DB'],['ca_fin','CA FI HT','eur','#8EA9DB'],
   ['assurance','ASSURANCE','bool','#8EA9DB'],['ass_pf','PERTE FI','bool','#8EA9DB'],['ass_deces','DÉCÈS','bool','#8EA9DB'],['ass_extgar','EXT. GAR.','bool','#8EA9DB'],['organisme','ORGANISME','org','#8EA9DB'],['loa','LOA','bool','#8EA9DB'],['lld','LLD','bool','#8EA9DB'],
-  ['reprise','REPRISE','bool','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
+  ['reprise','REPRISE','bool','#FFFF00'],['depot','DÉPÔT','text','#FFFF00'],['commentaires','COMMENTAIRES','text','#FFC000'],
 ];
 // Ordre des colonnes du classeur Excel (A → AD), utilisé pour l'import
 const XL_ORDER = ['date_cde','marque','modele','immat','client','vendeur','cession','repreneur','prix_vente_ht','jours_stock','marge_prev','marge_vendeur','marge_reelle','remise_ttc','frais_admin','eurodatacar','pack_liv','coyote','protech','bulbbee','annulation','date_fact','garantie','fi','ca_fin','assurance','organisme','loa','reprise','commentaires'];
-const HIDE_GRID = ['repreneur', 'assurance'];   // colonnes conservées en base mais retirées de l'affichage
+const HIDE_GRID = ['repreneur', 'assurance', 'depot'];   // colonnes conservées en base mais retirées de l'affichage
 const GCOLS = () => COLS.filter(c => !HIDE_GRID.includes(c[0]));
 const COLW = {date_cde:50,entite:50,marque:70,modele:60,immat:60,client:64,vendeur:64,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:36,marge_prev:50,marge_vendeur:52,marge_reelle:52,remise_ttc:40,frais_admin:40,eurodatacar:44,pack_liv:28,coyote:46,protech:50,bulbbee:48,annulation:46,date_fact:54,garantie:54,fi:42,ca_fin:52,assurance:46,organisme:58,loa:26,reprise:46,commentaires:32,ass_pf:36,ass_deces:38,ass_extgar:32,lld:26};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
@@ -874,14 +874,15 @@ function openCmd(id) {
   const d = document.createElement('div'); d.className = 'drawer';
   d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
     <div class="dbody">
-    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${entList(r.site).length ? lsel('entite', 'Entité', entList(r.site), 'Entité', true) : ''}${lsel('marque', 'Marque', marqList(r.site), 'Marque')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}</div>`)}
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${entList(r.site).length ? lsel('entite', 'Entité', entList(r.site), 'Entité', true) : ''}${lsel('marque', 'Marque', marqList(r.site), 'Marque')}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}<div class="f"><label>Dépôt</label><div class="seg" id="dep">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === !!r.depot}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true');this.form.elements.depot_par.hidden=this.textContent!=='Oui'">${v}</button>`).join('')}</div><select name="depot_par" ${r.depot ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"><option value="">— Client ou CA Auto Bank —</option>${['CLIENT', 'CA AUTO BANK'].map(v => `<option ${String(r.depot || '').toUpperCase() === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>`)}
     ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT (€)', 'number')}${inp('jours_stock', 'Nbre jour stock')}${inp('remise_ttc', 'Remise TTC (€)', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle (€)', 'number')}${inp('marge_vendeur', 'Marge HT vendeur (€)', 'number')}${MARGE_PLUS[r.site] != null ? `<div class="f"><label id="mrl">Marge réelle HT (€)</label><input name="marge_reelle" type="number" step="any" value="${esc(r.marge_reelle == null ? '' : r.marge_reelle)}" ${ro ? 'disabled' : ''}></div>` : inp('marge_reelle', 'Marge réelle HT (€)', 'number')}</div>`)}
     ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbee')}</div>`)}
-    ${sec('Facturation & financement', '#8EA9DB', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA FI HT (€)', 'number')}</div><div class="fs" style="margin-top:10px"><h4>Financement</h4><div class="toggles">${tg('fi', 'Crédit')}${tg('loa', 'LOA')}${tg('lld', 'LLD')}</div></div><div class="fs" style="margin-top:10px"><h4>Assurances</h4><div class="toggles">${tg('ass_pf', 'Perte FI')}${tg('ass_deces', 'Décès')}${tg('ass_extgar', 'Ext. garantie')}</div></div><div class="toggles" style="margin-top:12px">${tg('annulation', 'Annulée', true)}</div>`)}
+    ${sec('Financement', '#8EA9DB', `<div class="fg">${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA FI HT (€)', 'number')}</div><div class="fs" style="margin-top:10px"><h4>Type de financement</h4><div class="toggles">${tg('fi', 'Crédit')}${tg('loa', 'LOA')}${tg('lld', 'LLD')}</div></div><div class="fs" style="margin-top:10px"><h4>Assurances</h4><div class="toggles">${tg('ass_pf', 'Perte FI')}${tg('ass_deces', 'Décès')}${tg('ass_extgar', 'Ext. garantie')}</div></div>`)}
+    ${sec('Facturation', '#70AD47', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}</div>`)}
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
-    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>`}${id && canParam(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
+    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>${tg('annulation', 'Commande annulée', true)}`}${id && canParam(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
   d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); });
   document.body.appendChild(d);
   const mv = $('#cf').elements.marge_vendeur, mr = $('#cf').elements.marge_reelle;
@@ -914,6 +915,7 @@ async function saveCmd(id, site) {
     if (t === 'bool') { const b = f.querySelector(`[data-k="${k}"]`); if (b) o[k] = b.getAttribute('aria-pressed') === 'true'; return; }
     if (k === 'entite' && !f.elements.entite_sel) return;
     if (k === 'vendeur' || k === 'marque' || k === 'entite') { const sv = f.elements[k + '_sel'].value; o[k] = (sv === '__AUTRE' ? f.elements[k + '_autre'].value.trim().toUpperCase() : sv) || null; return; }
+    if (k === 'depot') { const b = f.querySelector('#dep button[aria-pressed="true"]'); o[k] = b && b.textContent === 'Oui' ? (f.elements.depot_par.value || '?') : null; return; }
     if (k === 'cession') { const b = f.querySelector('#ces button[aria-pressed="true"]'); o[k] = b && b.textContent === 'Oui' ? 'OUI' : null; return; }
     const el = f.elements[k]; if (!el) return;
     if (k === 'immat') { o[k] = fmtImmat(el.value.trim()) || null; return; }
@@ -922,6 +924,7 @@ async function saveCmd(id, site) {
     else if (t === 'date') o[k] = v || null;
     else o[k] = v === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat'].includes(k) ? v.toUpperCase() : v);
   });
+  if (o.depot === '?') { $('#dm').textContent = 'Dépôt : choisissez Client ou CA Auto Bank.'; return; }
   if (!o.vendeur) { $('#dm').textContent = 'Choisissez ou saisissez le vendeur.'; return; }
   if (f.elements.entite_sel && !o.entite) { $('#dm').textContent = "Choisissez l'entité."; return; }
   if (MARGE_PLUS[site] != null && o.marge_vendeur != null && !MARGE_PLUS_EXCLUS.includes(o.vendeur)) o.marge_reelle = o.marge_vendeur + MARGE_PLUS[site];
