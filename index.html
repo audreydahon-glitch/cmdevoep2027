@@ -575,7 +575,8 @@ function stats(sites, year, ent) {
   const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z(),
     v: {}, org: {}, gar: {}, sites};
   const vl = sites.length === 1 ? vendList(sites[0]) : [];
-  const vk = name => { const k = (name || '').trim().toUpperCase(); return vl.includes(k) ? k : '__NA'; };
+  // Un vendeur retiré de la liste (départ en cours d'année) garde sa ligne et son historique ; « Non affecté » = commande sans vendeur
+  const vk = name => { const k = (name || '').trim().toUpperCase(); return k || '__NA'; };
   const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z()});
   for (const r of S.rows) {
     if (!sites.includes(r.site) || r.annulation) continue;
@@ -654,7 +655,7 @@ function tilesHtml(st, protech) {
     ['IP FI', fP(ipC), oipc ? `objectif ${fP(oipc)}` : 'objectif non saisi', oipc && ipC != null ? ipC / oipc : null, '#6cc292'],
   ];
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
-  if (st.sites.length === 1) R.push(['Non affectées', fN(na), 'commandes sans vendeur connu', null, na ? '#ff8a7a' : '#6cc292', na ? 'alert' : '']);
+  if (st.sites.length === 1) R.push(['Non affectées', fN(na), 'commandes sans vendeur', null, na ? '#ff8a7a' : '#6cc292', na ? 'alert' : '']);
   else R.push(['Marge moy. / VO', c('liv') ? fE(c('marge') / c('liv')) : '-', `sur ${nf0.format(c('liv'))} VO livrés`, null, '#6cc292']);
   const cumul = `<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois} ${S.year}</div><div class="ribbon">${R.map(([l, v, o, p, col, cls]) => `<div class="rb ${cls || ''}"><b>${v}</b>${({'Commandes': 'commandes', 'VO livrés': 'VO livrés', 'Marge réelle HT': 'de marge', 'Marge moy. / VO': 'marge moy. / VO', 'Non affectées': 'non affectées'})[l] || l}<div class="rbo">${o}${p != null ? ` · <span class="${p >= 1 ? 'pos' : 'neg'}">${fP(p)}</span>` : ''}</div></div>`).join('')}</div>`;
   const liv = st.liv[m];
@@ -678,7 +679,8 @@ function recapSite(site) {
     <button class="btn ghost" onclick="exportRecap()">Exporter en Excel</button></div>${S.recapSec ? `<div style="overflow:auto">${recapTable(st, S.recapSec)}</div>` : ''}</div>`;
 }
 
-function vendRows(st) { return [...st.vl, ...(st.v.__NA ? ['__NA'] : [])]; }
+let VX = new Set();   // vendeurs présents dans les commandes mais plus dans la liste du parc
+function vendRows(st) { const x = Object.keys(st.v).filter(k => k !== '__NA' && !st.vl.includes(k)).sort(); VX = new Set(st.sites.length === 1 ? x : []); return [...st.vl, ...x, ...(st.v.__NA ? ['__NA'] : [])]; }
 const isHV = k => HORS_VOL.includes(k);
 // Codes de sites de Prospection Atelier → parcs du Tableau des Commandes
 const LEGACY = {'mb-cannet': 'mb-cannes', 'mb-le-cannet': 'mb-cannes', 'parc-nice': 'fmc-nice', 'nsa-nice': 'fmc-nice', 'parc-cannes': 'nsa-cannes', 'fmc-cannes': 'nsa-cannes', 'gva-audi-toulon': 'audi', 'gva-vw-toulon': 'vw-toulon', 'gva-ollioules': 'vw-ollioules', 'gva-six-fours': 'six-fours'};
@@ -712,7 +714,7 @@ function accTables(rows, pres) {
   });
   return h;
 }
-function vlab(k) { return k === '__NA' ? 'Non affecté' : esc(k); }
+function vlab(k) { return k === '__NA' ? 'Non affecté' : esc(k) + (VX.has(k) ? ' <span class="note">· hors liste</span>' : ''); }
 function recapTable(st, sec) {
   const V = vendRows(st), g = (k, f, only) => V.filter(v => only == null || isHV(v) === only).map(v => mrow(vlab(v) + (only === true ? ' <span class="note">· hors total</span>' : ''), (st.v[v] || {})[k] || Array(13).fill(0), f, v === '__NA' ? 'na' : only === true ? 'obj' : '')).join('');
   if (sec === 'cde') return `<table class="mx">${hdr('Commandes (date cde)')}${g('cde', fN, false)}${mrow('Total', st.cde, fN, 'sub')}${objRows(st.cde, st.oc, fN)}</table>`;
