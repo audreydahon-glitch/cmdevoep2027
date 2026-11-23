@@ -282,6 +282,7 @@ table.lt{border-collapse:collapse;width:100%}
 .rtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--line2);color:var(--ink2)}
 .rtag.aucun{background:var(--neg-soft);color:var(--neg)}
 .rtag.admin{background:var(--ink);color:#fff}
+.rtag.lecture{background:#eef1f5;color:var(--muted)}
 
 /* Connexion */
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
@@ -314,7 +315,7 @@ const DOMAIN = 'vo.plaque-ep.fr';
 const GROUPS = ['MB', 'FMC / NSA', 'GVA'];
 const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const MOIS_C = ['JANV.','FÉVR.','MARS','AVRIL','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
-const ROLE_LBL = {admin:'Administrateur', directeur:'Directeur', chef:'Chef des ventes', assistante:'Assistante commerciale', aucun:'Aucun accès'};
+const ROLE_LBL = {admin:'Administrateur', directeur:'Directeur', chef:'Chef des ventes', assistante:'Assistante commerciale', lecture:'Consultation', aucun:'Aucun accès'};
 // Colonnes du classeur, dans le même ordre et avec les mêmes couleurs d'en-tête
 const COLS = [
   ['date_cde','DATE CDE','date','#F4B183'],['entite','ENTITÉ','text','#F4B183'],['marque','MARQUE','text','#F4B183'],['modele','MODELE','text','#F4B183'],
@@ -484,7 +485,9 @@ function subscribe() {
 // ====================================================================
 //  Droits côté écran (la base les vérifie aussi)
 // ====================================================================
-const canEdit = site => S.me.role === 'admin' || (['directeur','chef','assistante'].includes(S.me.role) && S.me.sites.includes(site));
+// Saisie des commandes : assistantes et chefs des ventes (plus les admins). Directeur et Consultation : lecture seule.
+const canEdit = site => S.me.role === 'admin' || (['chef','assistante'].includes(S.me.role) && S.me.sites.includes(site));
+const canDel = site => S.me.role === 'admin' || (S.me.role === 'chef' && S.me.sites.includes(site));
 const canParam = site => S.me.role === 'admin' || (['directeur','chef'].includes(S.me.role) && S.me.sites.includes(site));
 const siteObj = slug => S.sites.find(s => s.slug === slug) || {slug, label: slug, grp: ''};
 function selSites() {
@@ -938,7 +941,7 @@ function openCmd(id) {
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
-    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>${tg('annulation', 'Commande annulée', true)}`}${id && canParam(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
+    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>${tg('annulation', 'Commande annulée', true)}`}${id && canDel(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
   d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); });
   document.body.appendChild(d);
   const mv = $('#cf').elements.marge_vendeur, mr = $('#cf').elements.marge_reelle;
@@ -1075,7 +1078,7 @@ async function adminView() {
       <table class="lt"><tr><th>Personne</th><th>Rôle</th><th>Parcs</th><th></th></tr>${sans.map(row).join('')}</table></div></div>
     <div><div class="card"><div class="chead"><h3>Créer un compte</h3></div><form class="pad" id="nf">
       <div class="f"><label>Prénom et nom</label><input name="nom" required placeholder="Sandra MARTIN"></div>
-      <div class="f" style="margin-top:10px"><label>Rôle</label><select name="role"><option value="assistante">Assistante commerciale</option><option value="chef">Chef des ventes</option><option value="directeur">Directeur</option><option value="admin">Administrateur</option></select></div>
+      <div class="f" style="margin-top:10px"><label>Rôle</label><select name="role"><option value="assistante">Assistante commerciale</option><option value="chef">Chef des ventes</option><option value="directeur">Directeur</option><option value="lecture">Consultation (lecture seule)</option><option value="admin">Administrateur</option></select></div>
       <div class="f" style="margin-top:10px"><label>Parcs</label>${parcPicker([])}</div>
       <div class="row2"><button class="btn" type="submit">Créer le compte</button><span class="dmsg" id="nm"></span></div><div id="nc"></div></form></div>
     <div class="card"><div class="chead"><h3>Importer un classeur Excel</h3></div><div class="pad">
@@ -1128,7 +1131,7 @@ function editAcc(id) {
   const cur = mapSites(c.sites);
   const d = document.createElement('div'); d.className = 'modal';
   d.innerHTML = `<form class="pbox" id="ef" style="max-width:620px"><h3>${esc(c.nom)}</h3><div class="note">${esc(c.identifiant)}</div>
-    <label>Rôle dans le Tableau des Commandes</label><select class="sel" name="role" style="width:100%">${['aucun', 'assistante', 'chef', 'directeur', 'admin'].map(r => `<option value="${r}" ${c.role === r ? 'selected' : ''}>${ROLE_LBL[r]}</option>`).join('')}</select>
+    <label>Rôle dans le Tableau des Commandes</label><select class="sel" name="role" style="width:100%">${['aucun', 'lecture', 'assistante', 'chef', 'directeur', 'admin'].map(r => `<option value="${r}" ${c.role === r ? 'selected' : ''}>${ROLE_LBL[r]}</option>`).join('')}</select>
     <label>Parcs</label>${parcPicker(cur)}
     <p class="note">Ne change rien dans Prospection Atelier.</p>
     <div class="row2"><button class="btn" type="submit">Enregistrer</button><button type="button" class="btn ghost" onclick="this.closest('.modal').remove()">Annuler</button></div></form>`;
