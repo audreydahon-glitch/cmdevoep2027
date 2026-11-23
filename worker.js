@@ -18,7 +18,7 @@ async function configGet({ env }) {
 // Les comptes sont ceux de Prospection Atelier : même identifiant, même mot de passe.
 
 const DOMAIN = 'vo.plaque-ep.fr';            // identifiant prenom.nom → prenom.nom@vo.plaque-ep.fr
-const ROLES = ['admin', 'directeur', 'chef', 'assistante', 'aucun'];
+const ROLES = ['admin', 'directeur', 'chef', 'assistante', 'lecture', 'aucun'];
 
 function fail(msg, status) { return Object.assign(new Error(msg), { status }); }
 
@@ -106,7 +106,7 @@ async function adminPost({ request, env }) {
   try {
     const c = client(env);
     c.anonOrService = env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-    await checkAdmin(request, c);
+    const me = await checkAdmin(request, c);
     const b = await request.json().catch(() => ({}));
     let out;
     if (b.action === 'create') {
@@ -116,6 +116,11 @@ async function adminPost({ request, env }) {
       const pwd = password();
       await c.sb('/auth/v1/admin/users/' + encodeURIComponent(b.id), { method: 'PUT', body: JSON.stringify({ password: pwd }) });
       out = { password: pwd };
+    } else if (b.action === 'delete') {
+      if (!b.id) throw fail('Compte manquant', 400);
+      if (b.id === me.id) throw fail('Vous ne pouvez pas supprimer votre propre compte', 400);
+      await c.sb('/auth/v1/admin/users/' + encodeURIComponent(b.id), { method: 'DELETE' });
+      out = { ok: true };
     } else {
       throw fail('Action inconnue', 400);
     }
