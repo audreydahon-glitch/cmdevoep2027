@@ -1029,7 +1029,7 @@ function paramView(site) {
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
     <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
-    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}<p class="note">Toujours ajoutés pour tous les parcs : ${BASE_VEND.join(', ')}.</p></div>${ENT_NONE.includes(site) ? '' : `<div><h4 class="eyebrow">Entités du parc</h4>${ta('entites', entList(site))}<p class="note">Ex. MB, GEELY. Laisser vide si le parc n'a qu'une entité.</p></div>`}<div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}<p class="note">« AM » = autres marques (compté en Ventes AM).</p></div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
+    <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}</div>${ENT_NONE.includes(site) ? '' : `<div><h4 class="eyebrow">Entités du parc</h4>${ta('entites', entList(site))}</div>`}<div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}</div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
 }
 async function saveObj(site) {
   const by = {};
@@ -1241,7 +1241,7 @@ function editAcc(id) {
   d.innerHTML = `<form class="pbox" id="ef" style="max-width:620px"><h3>${esc(c.nom)}</h3><div class="note">${esc(c.identifiant)}</div>
     <label>Rôle dans le Tableau des Commandes</label><select class="sel" name="role" style="width:100%">${['aucun', 'lecture', 'assistante', 'chef', 'directeur', 'admin'].map(r => `<option value="${r}" ${c.role === r ? 'selected' : ''}>${ROLE_LBL[r]}</option>`).join('')}</select>
     <label>Parcs</label>${parcPicker(cur)}
-    <p class="note">Ne change rien dans Prospection Atelier.</p>
+    
     <div class="row2"><button class="btn" type="submit">Enregistrer</button><button type="button" class="btn ghost" onclick="this.closest('.modal').remove()">Annuler</button></div></form>`;
   document.body.appendChild(d);
   $('#ef').onsubmit = async e => {
@@ -1372,7 +1372,7 @@ function exportRecap() {
 // ---------- Mot de passe ----------
 function pwdModal() {
   const d = document.createElement('div'); d.className = 'modal';
-  d.innerHTML = `<form class="pbox" id="pf"><h3>Changer mon mot de passe</h3><p class="note">C'est aussi votre mot de passe Prospection Atelier.</p>
+  d.innerHTML = `<form class="pbox" id="pf"><h3>Changer mon mot de passe</h3>
     <label>Nouveau mot de passe (8 caractères minimum)</label><input type="password" name="p1" minlength="8" required>
     <label>Confirmer</label><input type="password" name="p2" minlength="8" required>
     <div class="row2"><button class="btn" type="submit">Enregistrer</button><button type="button" class="btn ghost" onclick="this.closest('.modal').remove()">Annuler</button><span class="dmsg" id="pm"></span></div></form>`;
