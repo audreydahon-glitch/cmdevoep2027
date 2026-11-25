@@ -148,9 +148,10 @@ body.narrow .pgrid{grid-template-columns:1fr}
 .pgt{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--c);margin-bottom:8px;padding-left:2px}
 .pcard{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer}
 .pcard:hover{background:#f6f9ff;border-color:#c9d6ee}.pcard b{color:var(--muted);font-weight:600}
-.mx.pay td,.mx.pay th{white-space:nowrap}.mx.pay tr.open td{background:#f6f9ff}
+.mx.pay td,.mx.pay th{white-space:nowrap;padding-left:6px;padding-right:6px}.mx.pay tr.open td{background:#f6f9ff}
 .mx.pay tr.pdet>td{padding:6px 10px 14px 24px;background:#fbfcfe}.mx.pay tr.pdet .mx td,.mx.pay tr.pdet .mx th{font-size:12.5px;padding-top:6px;padding-bottom:6px}
-.ppg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.ppg .f input{width:100%}
+.ppg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.ppg .ppin{display:flex;align-items:center;gap:8px}.ppg .ppin input{flex:1;min-width:0}.ppg .ppin span{color:var(--muted);font-size:13px;white-space:nowrap;width:44px;flex:none}
+#cf .miss{border-color:#d0453a!important;background:#fff5f4}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
 .chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
 
@@ -934,21 +935,21 @@ function openCmd(id) {
     return `<div class="f"><label>${lab}</label><select name="${k}_sel" ${ro ? 'disabled' : ''} ${req ? 'required' : ''} onchange="const a=this.form.elements.${k}_autre;a.hidden=this.value!=='__AUTRE';if(!a.hidden)a.focus()"><option value="">— Choisir —</option>${list.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('')}<option value="__AUTRE" ${autre ? 'selected' : ''}>Autre (saisir)…</option></select>
       <input name="${k}_autre" placeholder="${ph}" value="${autre ? esc(cur) : ''}" ${autre ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"></div>`;
   };
-  const vsel = () => lsel('vendeur', 'Vendeur', vendList(r.site), 'Nom du vendeur', true);
+  const vsel = () => lsel('vendeur', 'Vendeur *', vendList(r.site), 'Nom du vendeur', true);
   const yn = (id, lab, on) => `<div class="f"><label>${lab}</label><div class="seg" id="${id}">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === on}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true')">${v}</button>`).join('')}</div></div>`;
   const sec = (t, c, inner) => `<div class="fs"><h4><i style="background:${c}"></i>${t}</h4>${inner}</div>`;
   const d = document.createElement('div'); d.className = 'drawer';
   d.innerHTML = `<div class="dbox"><form id="cf"><div class="dhead"><div><div class="eyebrow">${esc(siteObj(r.site).label)}</div><h3>${id ? esc(r.immat || r.client || 'Commande') : 'Nouvelle commande'}</h3></div><button type="button" class="btn ghost" onclick="closeDrawer()">Fermer</button></div>
     <div class="dbody">
-    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${entList(r.site).length ? lsel('entite', 'Entité', entList(r.site), 'Entité', true, true) : ''}${lsel('marque', 'Marque', marqList(r.site), 'Marque', false, true)}${inp('modele', 'Modèle')}${inp('immat', "N° d'immat")}${inp('client', 'Client', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}<div class="f"><label>Dépôt</label><div class="seg" id="dep">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === !!r.depot}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true');this.form.elements.depot_par.hidden=this.textContent!=='Oui'">${v}</button>`).join('')}</div><select name="depot_par" ${r.depot ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"><option value="">— Client ou CA Auto Bank —</option>${['CLIENT', 'CA AUTO BANK'].map(v => `<option ${String(r.depot || '').toUpperCase() === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>`)}
-    ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT (€)', 'number')}${inp('jours_stock', 'Nbre jour stock')}${inp('remise_ttc', 'Remise TTC (€)', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle (€)', 'number')}${inp('marge_vendeur', 'Marge HT vendeur (€)', 'number')}${MARGE_PLUS[r.site] != null ? `<div class="f"><label id="mrl">Marge réelle HT (€)</label><input name="marge_reelle" type="number" step="any" value="${esc(r.marge_reelle == null ? '' : r.marge_reelle)}" ${ro ? 'disabled' : ''}></div>` : inp('marge_reelle', 'Marge réelle HT (€)', 'number')}</div>`)}
+    ${sec('Commande', '#F4B183', `<div class="fg">${inp('date_cde', 'Date cde', 'date')}${entList(r.site).length ? lsel('entite', 'Entité *', entList(r.site), 'Entité', true, true) : ''}${lsel('marque', 'Marque *', marqList(r.site), 'Marque', false, true)}${inp('modele', 'Modèle *')}${inp('immat', "N° d'immat *")}${inp('client', 'Client *', 'text', 'w2')}${vsel()}${yn('ces', 'Cession', !!(r.cession && String(r.cession).trim()))}${yn('rep', 'Reprise', !!r.reprise)}<div class="f"><label>Dépôt</label><div class="seg" id="dep">${['Oui', 'Non'].map(v => `<button type="button" aria-pressed="${(v === 'Oui') === !!r.depot}" ${ro ? 'disabled' : ''} onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));this.setAttribute('aria-pressed','true');this.form.elements.depot_par.hidden=this.textContent!=='Oui'">${v}</button>`).join('')}</div><select name="depot_par" ${r.depot ? '' : 'hidden'} ${ro ? 'disabled' : ''} style="margin-top:6px"><option value="">— Client ou CA Auto Bank —</option>${['CLIENT', 'CA AUTO BANK'].map(v => `<option ${String(r.depot || '').toUpperCase() === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>`)}
+    ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT (€) ¹', 'number')}${inp('jours_stock', 'Nbre jour stock *')}${inp('remise_ttc', 'Remise TTC (€)', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle (€) *', 'number')}${inp('marge_vendeur', 'Marge HT vendeur (€) ¹', 'number')}${MARGE_PLUS[r.site] != null ? `<div class="f"><label id="mrl">Marge réelle HT (€)</label><input name="marge_reelle" type="number" step="any" value="${esc(r.marge_reelle == null ? '' : r.marge_reelle)}" ${ro ? 'disabled' : ''}></div>` : inp('marge_reelle', 'Marge réelle HT (€)', 'number')}</div>`)}
     ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbee')}</div>`)}
-    ${sec('Financement', '#8EA9DB', `<div class="fs" style="margin-top:0"><h4>Type de financement</h4><div class="toggles">${tg('fi', 'Crédit')}${tg('loa', 'LOA')}${tg('lld', 'LLD')}</div></div><div class="fg" style="margin-top:10px">${inp('organisme', 'Organisme', 'text', '', 'dlo')}${inp('ca_fin', 'CA FI HT (€)', 'number')}</div><div class="fs" style="margin-top:10px"><h4>Assurances</h4><div class="toggles">${tg('ass_pf', 'Perte FI')}${tg('ass_deces', 'Décès')}${tg('ass_extgar', 'Ext. garantie')}</div></div>`)}
+    ${sec('Financement', '#8EA9DB', `<div class="fs" style="margin-top:0"><h4>Type de financement</h4><div class="toggles">${tg('fi', 'Crédit')}${tg('loa', 'LOA')}${tg('lld', 'LLD')}</div></div><div class="fg" style="margin-top:10px">${inp('organisme', 'Organisme ²', 'text', '', 'dlo')}${inp('ca_fin', 'CA FI HT (€) ²', 'number')}</div><div class="fs" style="margin-top:10px"><h4>Assurances</h4><div class="toggles">${tg('ass_pf', 'Perte FI')}${tg('ass_deces', 'Décès')}${tg('ass_extgar', 'Ext. garantie')}</div></div>`)}
     ${sec('Facturation', '#70AD47', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}</div>`)}
     ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
-    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>${tg('annulation', 'Commande annulée', true)}`}${id && canDel(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span></div></form></div>`;
+    </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>${tg('annulation', 'Commande annulée', true)}`}${id && canDel(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span>${ro ? '' : '<span class="note" style="margin-left:10px;white-space:nowrap">* obligatoire · ¹ si facturée · ² si financée</span>'}</div></form></div>`;
   d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); });
   document.body.appendChild(d);
   const mv = $('#cf').elements.marge_vendeur, mr = $('#cf').elements.marge_reelle;
@@ -991,8 +992,20 @@ async function saveCmd(id, site) {
     else o[k] = v === '' ? null : (['vendeur', 'marque', 'garantie', 'organisme', 'immat'].includes(k) ? v.toUpperCase() : v);
   });
   if (o.depot === '?') { $('#dm').textContent = 'Dépôt : choisissez Client ou CA Auto Bank.'; return; }
-  if (!o.vendeur) { $('#dm').textContent = 'Choisissez ou saisissez le vendeur.'; return; }
-  if (f.elements.entite_sel && !o.entite) { $('#dm').textContent = "Choisissez l'entité."; return; }
+  // Champs obligatoires (sauf commande annulée) : * toujours · ¹ si facturée · ² si financée
+  if (!o.annulation) {
+    const miss = [], need = (k, lab) => { if (o[k] == null || o[k] === '') miss.push([k, lab]); };
+    if (f.elements.entite_sel) need('entite', 'Entité');
+    need('marque', 'Marque'); need('modele', 'Modèle'); need('immat', 'Immat'); need('client', 'Client'); need('vendeur', 'Vendeur');
+    need('jours_stock', 'Jours de stock'); need('marge_prev', 'Marge HT prévisionnelle');
+    if (o.fi || o.loa || o.lld) { need('organisme', 'Organisme'); need('ca_fin', 'CA FI HT'); }
+    if (o.date_fact) { need('prix_vente_ht', 'Prix de vente HT'); need('marge_vendeur', 'Marge HT vendeur'); }
+    f.querySelectorAll('.miss').forEach(x => x.classList.remove('miss'));
+    if (miss.length) {
+      miss.forEach(([k]) => { const el = f.elements[k] || f.elements[k + '_sel']; if (el) el.classList.add('miss'); });
+      $('#dm').textContent = 'À compléter : ' + miss.map(x => x[1]).join(', ') + '.'; return;
+    }
+  }
   if (MARGE_PLUS[site] != null && o.marge_vendeur != null && !MARGE_PLUS_EXCLUS.includes(o.vendeur)) o.marge_reelle = o.marge_vendeur + MARGE_PLUS[site];
   $('#dm').textContent = 'Enregistrement…';
   const q = id ? S.sb.from('tc_commandes').update(o).eq('id', id).select() : S.sb.from('tc_commandes').insert(o).select();
@@ -1066,7 +1079,7 @@ function payCalc(site, ent, P, m) {
   const ents = entList(site), first = ents[0] || '';
   const rows = S.rows.filter(r => r.site === site && !r.annulation && ym(r.date_fact)[0] === S.year && ym(r.date_fact)[1] === m &&
     (!ent || ((r.entite || first) || '').toUpperCase() === ent));
-  const vobj = ((S.obj[site + '|' + S.year + '|' + m] || {}).vend || {})[ent || '*'] || {};
+  const VD = (S.obj[site + '|' + S.year + '|' + m] || {}).vend || {}, vobj = VD[ent || '*'] || {}, vani = VD[(ent || '*') + '|anim'] || {}, vcom = VD[(ent || '*') + '|com'] || {};
   const by = {};
   rows.forEach(r => { const v = (r.vendeur || '').trim().toUpperCase(); if (!v || PP_EXCL.includes(v)) return; (by[v] || (by[v] = [])).push(r); });
   vendList(site).filter(v => !PP_EXCL.includes(v)).forEach(v => by[v] || (by[v] = []));
@@ -1074,10 +1087,10 @@ function payCalc(site, ent, P, m) {
     const fin = r => !!(r.fi || r.loa || r.lld);
     const liv = rs.length, nf = rs.filter(fin).length, ip = liv ? nf / liv : 0;
     const det = rs.map(r => {
-      if (isCess(r)) { const j = jStock(r), fo = j != null && j > 60 ? P.cessPlus : P.cess60, mg = N(r.marge_vendeur);   // cession : forfait OU marge restante, le plus élevé, sans cumul
-        return {r, type: `Cession ${j == null ? '' : j + ' j'}`, taux: null, com: Math.max(fo, mg), cTxt: mg > fo ? `marge > forfait ${fo} €` : `forfait ${fo} €`}; }
+      if (isCess(r)) { const j = jStock(r), fo = j != null && j > 60 ? P.cessPlus : P.cess60, mg = N(r.marge_vendeur);   // cession : forfait uniquement
+        return {r, type: `Cession ${j == null ? '' : j + ' j'}`, taux: null, com: fo, cTxt: `forfait ${fo} €`}; }
       const t = fin(r) && ip * 100 >= P.ipTop ? P.top : P.base;
-      const brut = N(r.marge_vendeur) * t / 100, com = Math.min(P.maxi, Math.max(P.mini, brut));
+      const brut = N(r.marge_vendeur) * t / 100, com = N(r.marge_vendeur) < 0 ? 0 : Math.min(P.maxi, Math.max(P.mini, brut));   // VO vendu à perte : 0 €
       return {r, type: fin(r) ? 'VO financé' : 'VO', taux: t, brut, com};
     });
     const comM = det.filter(d => d.taux != null).reduce((a, d) => a + d.com, 0), cess = det.filter(d => d.taux == null).reduce((a, d) => a + d.com, 0);
@@ -1087,8 +1100,9 @@ function payCalc(site, ent, P, m) {
     const fa = rs.filter(r => r.frais_admin).length, bul = rs.filter(r => r.bulbbee).length, rep = rs.filter(r => r.reprise).length;
     const obj = vobj[v] == null || vobj[v] === '' ? null : N(vobj[v]);
     const pv = obj == null || !obj || liv < obj ? 0 : liv >= obj + 2 ? P.f2 : liv >= obj + 1 ? P.f1 : P.f0, pf = pv * liv;
-    const tot = comM + cess + comFI + fa * P.fa + bul * P.bul + rep * P.rep + pf;
-    return {v, liv, nf, ip, det, comM, cess, caFI, tFI, comFI, fa, bul, rep, obj, pv, pf, tot};
+    const anim = N(vani[v]), com = vcom[v] || '';
+    const tot = comM + cess + comFI + fa * P.fa + bul * P.bul + rep * P.rep + pf + anim;
+    return {v, liv, nf, ip, det, comM, cess, caFI, tFI, comFI, fa, bul, rep, obj, pv, pf, anim, com, tot};
   });
   const ord = vendList(site);
   return out.sort((a, b) => (ord.indexOf(a.v) + 1 || 999) - (ord.indexOf(b.v) + 1 || 999));
@@ -1102,34 +1116,39 @@ function payView(site) {
   const L = payCalc(site, ent, P, m), T = k => L.reduce((a, x) => a + (x[k] || 0), 0);
   const e = v => v ? fE(v) : '-';
   const entSeg = keys.length > 1 ? `<div class="seg">${keys.map(k => `<button aria-pressed="${k === ent}" onclick="S.payEnt='${k}';renderMain()">${esc(k || 'Parc')}</button>`).join('')}</div>` : '';
-  let t = `<table class="mx pay"><tr><th class="lab">Vendeur</th><th>VO livrés</th><th>Financés</th><th>IP FI</th><th>Com. marge</th><th>Cessions</th><th>CA FI éligible</th><th>Com. FI</th><th>Frais admin</th><th>Bulbee</th><th>Reprises</th><th>Obj. factu.</th><th>Prime factu.</th><th class="tt">TOTAL</th></tr>`;
-  L.forEach(x => {
-    t += `<tr class="${S.payOpen === x.v ? 'open' : ''}" style="cursor:pointer" onclick="S.payOpen=S.payOpen==='${x.v}'?null:'${x.v}';renderMain()"><td class="lab">${esc(x.v)} <span class="note">${S.payOpen === x.v ? '▾' : '▸'}</span></td><td>${fN(x.liv)}</td><td>${fN(x.nf)}</td><td class="${x.liv ? (x.ip * 100 >= P.ipTop ? 'pos' : 'neg') : 'z'}">${x.liv ? fP(x.ip) : '-'}</td><td>${e(x.comM)}</td><td>${e(x.cess)}</td><td>${e(x.caFI)}</td><td>${e(x.comFI)}${x.comFI ? ` <span class="note">${String(x.tFI).replace('.', ',')} %</span>` : ''}</td>
+  let t = `<table class="mx pay"><tr><th class="lab">Vendeur</th><th>VO livrés</th><th>Financés</th><th>IP FI</th><th>Com. marge</th><th>Cessions</th><th>CA FI éligible</th><th>Taux FI</th><th>Com. FI</th><th>Frais admin</th><th>Bulbee</th><th>Reprises</th><th>Obj. factu.</th><th>Prime factu.</th><th>Animation</th><th class="tt">TOTAL</th><th class="lab">Commentaire</th></tr>`;
+  const LV = S.payOpen && L.some(x => x.v === S.payOpen) ? L.filter(x => x.v === S.payOpen) : L;
+  LV.forEach(x => {
+    t += `<tr class="${S.payOpen === x.v ? 'open' : ''}" style="cursor:pointer" onclick="S.payOpen=S.payOpen==='${x.v}'?null:'${x.v}';renderMain()"><td class="lab">${S.payOpen === x.v ? '<span class="note">← tous</span> ' : ''}${esc(x.v)}${S.payOpen === x.v ? '' : ' <span class="note">▸</span>'}</td><td>${fN(x.liv)}</td><td>${fN(x.nf)}</td><td class="${x.liv ? (x.ip * 100 >= P.ipTop ? 'pos' : 'neg') : 'z'}">${x.liv ? fP(x.ip) : '-'}</td><td>${e(x.comM)}</td><td>${e(x.cess)}</td><td>${e(x.caFI)}</td><td>${x.caFI ? String(x.tFI).replace('.', ',') + ' %' : '-'}</td><td>${e(x.comFI)}</td>
       <td>${x.fa ? `${x.fa} × ${P.fa} €` : '-'}</td><td>${x.bul ? `${x.bul} × ${P.bul} €` : '-'}</td><td>${x.rep ? `${x.rep} × ${P.rep} €` : '-'}</td>
-      <td onclick="event.stopPropagation()"><input class="pobj" data-v="${esc(x.v)}" value="${x.obj == null ? '' : x.obj}" ${ed ? '' : 'disabled'} style="width:46px;text-align:center"></td><td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td class="tt"><b>${fE(x.tot)}</b></td></tr>`;
-    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="14"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
+      <td onclick="event.stopPropagation()"><input class="pobj" data-v="${esc(x.v)}" value="${x.obj == null ? '' : x.obj}" ${ed ? '' : 'disabled'} style="width:46px;text-align:center"></td><td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td onclick="event.stopPropagation()"><input class="panim" data-v="${esc(x.v)}" value="${x.anim || ''}" ${ed ? '' : 'disabled'} placeholder="€" style="width:70px;text-align:center"></td><td class="tt"><b>${fE(x.tot)}</b></td><td onclick="event.stopPropagation()"><input class="pcom" data-v="${esc(x.v)}" value="${esc(x.com)}" ${ed ? "" : "disabled"} style="width:150px"></td></tr>`;
+    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="17"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : N(d.r.marge_vendeur) < 0 ? 'marge négative → 0 €' : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
   });
-  t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td></td><td>${e(T('pf'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td></tr></table>`;
-  const f = (k, lab, u) => `<div class="f"><label>${lab}</label><input class="ppi" data-k="${k}" value="${Array.isArray(P[k]) ? P[k].join(' / ') : P[k]}" ${ed ? '' : 'disabled'}><span class="note">${u || ''}</span></div>`;
+  if (LV !== L) t += '</table>'; else t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td></td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td></td><td>${e(T('pf'))}</td><td>${e(T('anim'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td><td></td></tr></table>`;   // ligne Total seulement quand tous les vendeurs sont affichés
+  const f = (k, lab, u) => `<div class="f"><label>${lab}</label><div class="ppin"><input class="ppi" data-k="${k}" value="${Array.isArray(P[k]) ? P[k].join(' / ') : P[k]}" ${ed ? '' : 'disabled'}><span>${u || ''}</span></div></div>`;
   const bareme = `<details class="card" style="margin-top:14px"${S.ppOpen ? ' open' : ''} ontoggle="S.ppOpen=this.open"><summary style="cursor:pointer;padding:14px 18px;font-weight:700">Barème · ${esc(P.nom)}${ent ? ' · ' + esc(ent) : ''}</summary><div style="padding:0 18px 18px">
     <div class="ppg">${f('base', 'Com. marge vendeur', '%')}${f('top', 'Com. VO financé (si IP ≥ seuil)', '%')}${f('ipTop', 'Seuil IP FI', '%')}${f('mini', 'Mini par VO', '€')}${f('maxi', 'Maxi par VO', '€')}
-    ${f('cess60', 'Cession 0-60 j', '€')}${f('cessPlus', 'Cession > 60 j', '€')}${f('fiMin', 'Montant FI mini', '€')}${f('contrat', 'Contrat métier mensuel (CA FI)', '€ · 0 = non renseigné')}
-    ${f('t1', 'Tranche IP 1 jusqu\'à', '%')}${f('t2', 'Tranche IP 2 jusqu\'à', '%')}${f('fiA', 'Taux FI < contrat (3 tranches)', '% du CA FI')}${f('fiB', 'Taux FI > contrat (3 tranches)', '% du CA FI')}
+    ${f('cess60', 'Cession 0-60 j', '€')}${f('cessPlus', 'Cession > 60 j', '€')}${f('fiMin', 'Montant FI mini', '€')}${f('contrat', 'Contrat métier mensuel (CA FI) · 0 = non renseigné', '€')}
+    ${f('t1', 'Tranche IP 1 jusqu\'à', '%')}${f('t2', 'Tranche IP 2 jusqu\'à', '%')}${f('fiA', 'Taux FI < contrat (3 tranches)', '%')}${f('fiB', 'Taux FI > contrat (3 tranches)', '%')}
     ${f('fa', 'Frais admin (MAD)', '€ / VO')}${f('bul', 'Bulbee', '€ / VO')}${f('rep', 'Reprise VOP', '€ / VO')}${f('f0', 'Obj. factu. atteint', '€ / VO')}${f('f1', 'Obj. factu. +1', '€ / VO')}${f('f2', 'Obj. factu. +2 et plus', '€ / VO')}</div>
     ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème</button>` : ''}</div></details>`;
   return `<div class="card"><div class="chead"><div><h3>Rémunération variable · ${esc(siteObj(site).label)}${ent ? ' · ' + esc(ent) : ''}</h3><div class="sub">${MOIS[m - 1]} ${S.year} · VO facturés dans le mois · cliquer sur un vendeur pour le détail</div></div>
-    <div class="tools">${entSeg}${ed ? `<button class="btn ghost" onclick="savePObj('${site}')">Enregistrer les objectifs</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
+    <div class="tools">${entSeg}${ed ? `<button class="btn" onclick="savePObj('${site}')">Enregistrer objectifs, animation et commentaires</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
     <div style="overflow:auto">${t}</div>
-    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € / maxi ${P.maxi} € par VO · cessions : forfait selon les jours de stock ou marge restante si elle est plus élevée (sans cumul) · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
+    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € / maxi ${P.maxi} € par VO, 0 € si la marge est négative · cessions au forfait selon les jours de stock · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
 }
 async function savePObj(site) {
   const m = S.month, key = site + '|' + S.year + '|' + m, ent = S.payEnt || '*', o = S.obj[key] || {site, annee: S.year, mois: m};
   const vend = Object.assign({}, o.vend || {}); const cur = Object.assign({}, vend[ent || '*'] || {});
   document.querySelectorAll('.pobj').forEach(i => { const v = i.value.trim(); if (v === '') delete cur[i.dataset.v]; else cur[i.dataset.v] = Number(v.replace(',', '.')); });
   vend[ent || '*'] = cur;
+  const an = Object.assign({}, vend[(ent || '*') + '|anim'] || {}), cm = Object.assign({}, vend[(ent || '*') + '|com'] || {});
+  document.querySelectorAll('.panim').forEach(i => { const v = i.value.replace(/[\s€]/g, '').replace(',', '.'); if (v === '') delete an[i.dataset.v]; else an[i.dataset.v] = Number(v) || 0; });
+  document.querySelectorAll('.pcom').forEach(i => { const v = i.value.trim(); if (!v) delete cm[i.dataset.v]; else cm[i.dataset.v] = v; });
+  vend[(ent || '*') + '|anim'] = an; vend[(ent || '*') + '|com'] = cm;
   const { error } = await S.sb.from('tc_objectifs').upsert({site, annee: S.year, mois: m, vend});
   if (error) { flash('Erreur : ' + error.message); return; }
-  S.obj[key] = Object.assign({}, o, {vend}); flash('Objectifs vendeurs enregistrés'); renderMain();
+  S.obj[key] = Object.assign({}, o, {vend}); flash('Enregistré'); renderMain();
 }
 async function savePP(site) {
   const PP = JSON.parse(JSON.stringify(ppOf(site))), ent = S.payEnt, P = Object.assign({}, PP_MBVO, PP[ent]);
@@ -1144,9 +1163,9 @@ function exportPay(site) {
   const PP = ppOf(site), wb = XLSX.utils.book_new();
   Object.keys(PP).forEach(ent => {
     const P = Object.assign({}, PP_MBVO, PP[ent]), rows = [];
-    for (let m = 1; m <= 12; m++) payCalc(site, ent, P, m).forEach(x => x.liv || x.tot ? rows.push({MOIS: MOIS[m - 1], VENDEUR: x.v, 'VO LIVRÉS': x.liv, 'FINANCÉS': x.nf, 'IP FI': Math.round(x.ip * 100) / 100,
-      'COM. MARGE': Math.round(x.comM), 'CESSIONS': Math.round(x.cess), 'CA FI ÉLIGIBLE': Math.round(x.caFI), 'COM. FI': Math.round(x.comFI), 'FRAIS ADMIN': x.fa * P.fa, 'BULBEE': x.bul * P.bul, 'REPRISES': x.rep * P.rep,
-      'OBJ. FACTU.': x.obj, 'PRIME FACTU.': x.pf, 'TOTAL': Math.round(x.tot)}) : 0);
+    for (let m = 1; m <= 12; m++) payCalc(site, ent, P, m).forEach(x => x.liv || x.tot || x.com ? rows.push({MOIS: MOIS[m - 1], VENDEUR: x.v, 'VO LIVRÉS': x.liv, 'FINANCÉS': x.nf, 'IP FI': Math.round(x.ip * 100) / 100,
+      'COM. MARGE': Math.round(x.comM), 'CESSIONS': Math.round(x.cess), 'CA FI ÉLIGIBLE': Math.round(x.caFI), 'TAUX FI %': x.tFI, 'COM. FI': Math.round(x.comFI), 'FRAIS ADMIN': x.fa * P.fa, 'BULBEE': x.bul * P.bul, 'REPRISES': x.rep * P.rep,
+      'OBJ. FACTU.': x.obj, 'PRIME FACTU.': x.pf, 'ANIMATION': x.anim, 'TOTAL': Math.round(x.tot), 'COMMENTAIRE': x.com}) : 0);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), ('REM ' + (ent || 'PARC')).slice(0, 31));
   });
   XLSX.writeFile(wb, `Remuneration VO ${siteObj(site).label.replace(/[\\/:*?"<>|]/g, '-')} ${S.year}.xlsx`);
