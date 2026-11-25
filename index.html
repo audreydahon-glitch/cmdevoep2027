@@ -1044,7 +1044,8 @@ function paramView(site) {
   }
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
-    <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne. Une commande dont le vendeur n'est pas dans la liste apparaît en « Non affecté » dans le récap.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
+    <div class="card"><div class="pad">${(Object.keys(ppOf(site)).length ? Object.keys(ppOf(site)) : ['']).map(e => yObjGrid(site, e, vendList(site).filter(v => !PP_EXCL.includes(v)), ed)).join('')}</div></div>
+    <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
     <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}</div>${ENT_NONE.includes(site) ? '' : `<div><h4 class="eyebrow">Entités du parc</h4>${ta('entites', entList(site))}</div>`}<div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}</div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
 }
 async function saveObj(site) {
@@ -1093,7 +1094,7 @@ function payCalc(site, ent, P, m) {
       if (isCess(r)) { const j = jStock(r), fo = j != null && j > 60 ? P.cessPlus : P.cess60, mg = N(r.marge_vendeur);   // cession : forfait uniquement
         return {r, type: `Cession ${j == null ? '' : j + ' j'}`, taux: null, com: fo, cTxt: `forfait ${fo} €`}; }
       const t = fin(r) && ip * 100 >= P.ipTop ? P.top : P.base;
-      const brut = N(r.marge_vendeur) * t / 100, com = N(r.marge_vendeur) < 0 ? 0 : Math.min(P.maxi, Math.max(P.mini, brut));   // VO vendu à perte : 0 €
+      const brut = N(r.marge_vendeur) * t / 100, com = Math.min(P.maxi, Math.max(P.mini, brut));   // mini 150 € même si la marge est négative
       return {r, type: fin(r) ? 'VO financé' : 'VO', taux: t, brut, com};
     });
     const comM = det.filter(d => d.taux != null).reduce((a, d) => a + d.com, 0), cess = det.filter(d => d.taux == null).reduce((a, d) => a + d.com, 0);
@@ -1125,7 +1126,7 @@ function payView(site) {
     t += `<tr class="${S.payOpen === x.v ? 'open' : ''}" style="cursor:pointer" onclick="S.payOpen=S.payOpen==='${x.v}'?null:'${x.v}';renderMain()"><td class="lab">${S.payOpen === x.v ? '<span class="note">← tous</span> ' : ''}${esc(x.v)}${S.payOpen === x.v ? '' : ' <span class="note">▸</span>'}</td><td>${fN(x.liv)}</td><td>${fN(x.nf)}</td><td class="${x.liv ? (x.ip * 100 >= P.ipTop ? 'pos' : 'neg') : 'z'}">${x.liv ? fP(x.ip) : '-'}</td><td>${e(x.comM)}</td><td>${e(x.cess)}</td><td>${e(x.caFI)}</td><td>${x.caFI ? String(x.tFI).replace('.', ',') + ' %' : '-'}</td><td>${e(x.comFI)}</td>
       <td>${x.fa ? `${x.fa} × ${P.fa} €` : '-'}</td><td>${x.bul ? `${x.bul} × ${P.bul} €` : '-'}</td><td>${x.rep ? `${x.rep} × ${P.rep} €` : '-'}</td>
       <td onclick="event.stopPropagation()"><input class="pobj" data-v="${esc(x.v)}" value="${x.obj == null ? '' : x.obj}" ${ed ? '' : 'disabled'} style="width:46px;text-align:center"></td><td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td onclick="event.stopPropagation()"><input class="panim" data-v="${esc(x.v)}" value="${x.anim || ''}" ${ed ? '' : 'disabled'} placeholder="€" style="width:70px;text-align:center"></td><td class="tt"><b>${fE(x.tot)}</b></td><td onclick="event.stopPropagation()"><input class="pcom" data-v="${esc(x.v)}" value="${esc(x.com)}" ${ed ? "" : "disabled"} style="width:150px"></td></tr>`;
-    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="17"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : N(d.r.marge_vendeur) < 0 ? 'marge négative → 0 €' : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
+    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="17"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
   });
   if (LV !== L) t += '</table>'; else t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td></td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td></td><td>${e(T('pf'))}</td><td>${e(T('anim'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td><td></td></tr></table>`;   // ligne Total seulement quand tous les vendeurs sont affichés
   const f = (k, lab, u) => `<div class="f"><label>${lab}</label><div class="ppin"><input class="ppi" data-k="${k}" value="${Array.isArray(P[k]) ? P[k].join(' / ') : P[k]}" ${ed ? '' : 'disabled'}><span>${u || ''}</span></div></div>`;
@@ -1136,14 +1137,11 @@ function payView(site) {
     ${f('fa', 'Frais admin (MAD)', '€ / VO')}${f('bul', 'Bulbee', '€ / VO')}${f('rep', 'Reprise VOP', '€ / VO')}${f('f0', 'Obj. factu. atteint', '€ / VO')}${f('f1', 'Obj. factu. +1', '€ / VO')}${f('f2', 'Obj. factu. +2 et plus', '€ / VO')}</div>
     <div class="ppg" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="f"><label>Animation</label><textarea class="ppt" data-k="anim" rows="3" ${ed ? '' : 'disabled'} placeholder="Ex. challenge du mois, prime spéciale…">${esc(P.anim || '')}</textarea></div><div class="f"><label>Commentaires</label><textarea class="ppt" data-k="comm" rows="3" ${ed ? '' : 'disabled'}>${esc(P.comm || '')}</textarea></div></div>
     ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème</button>` : ''}
-    <h4 class="eyebrow" style="margin:22px 0 8px">Objectifs de facturation par vendeur · ${S.year} (nombre de VO facturés)</h4>
-    <div style="overflow:auto"><table class="mx og2"><tr><th class="lab">Vendeur</th>${MOIS_C.map(x => `<th>${x}</th>`).join('')}<th class="tt">ANNÉE</th></tr>
-    ${L.map(x => { let t = 0; return `<tr><td class="lab">${esc(x.v)}</td>${[...Array(12)].map((_, i) => { const v = (((S.obj[site + '|' + S.year + '|' + (i + 1)] || {}).vend || {})[ent || '*'] || {})[x.v]; t += N(v); return `<td><input class="yobj" data-v="${esc(x.v)}" data-m="${i + 1}" value="${v == null ? '' : v}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${t || '-'}</td></tr>`; }).join('')}</table></div>
-    ${ed ? `<button class="btn" style="margin-top:12px" onclick="saveYObj('${site}')">Enregistrer les objectifs de facturation</button>` : ''}</div></details>`;
+    ${yObjGrid(site, ent, L.map(x => x.v), ed)}</div></details>`;
   return `<div class="card"><div class="chead"><div><h3>Rémunération variable · ${esc(siteObj(site).label)}${ent ? ' · ' + esc(ent) : ''}</h3><div class="sub">${MOIS[m - 1]} ${S.year} · VO facturés dans le mois · cliquer sur un vendeur pour le détail</div></div>
     <div class="tools">${entSeg}${ed ? `<button class="btn" onclick="savePObj('${site}')">Enregistrer objectifs, animation et commentaires</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
     <div style="overflow:auto">${t}</div>
-    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € / maxi ${P.maxi} € par VO, 0 € si la marge est négative · cessions au forfait selon les jours de stock · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
+    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € (même si la marge est négative) / maxi ${P.maxi} € par VO · cessions au forfait selon les jours de stock · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
 }
 async function savePObj(site) {
   const m = S.month, key = site + '|' + S.year + '|' + m, ent = S.payEnt || '*', o = S.obj[key] || {site, annee: S.year, mois: m};
@@ -1158,8 +1156,15 @@ async function savePObj(site) {
   if (error) { flash('Erreur : ' + error.message); return; }
   S.obj[key] = Object.assign({}, o, {vend}); flash('Enregistré'); renderMain();
 }
-async function saveYObj(site) {
-  const ent = S.payEnt || '*', rows = [];
+// Objectifs de facturation par vendeur et par mois (utilisés pour la prime facturation) — aussi dans « Vendeurs & objectifs »
+function yObjGrid(site, ent, vendors, ed) {
+  return `<h4 class="eyebrow" style="margin:22px 0 8px">Objectifs de facturation par vendeur${ent ? ' · ' + esc(ent) : ''} · ${S.year} (nombre de VO facturés)</h4>
+    <div style="overflow:auto"><table class="mx og2"><tr><th class="lab">Vendeur</th>${MOIS_C.map(x => `<th>${x}</th>`).join('')}<th class="tt">ANNÉE</th></tr>
+    ${vendors.map(v => { let t = 0; return `<tr><td class="lab">${esc(v)}</td>${[...Array(12)].map((_, i) => { const x = (((S.obj[site + '|' + S.year + '|' + (i + 1)] || {}).vend || {})[ent || '*'] || {})[v]; t += N(x); return `<td><input class="yobj" data-v="${esc(v)}" data-m="${i + 1}" value="${x == null ? '' : x}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${t || '-'}</td></tr>`; }).join('')}</table></div>
+    ${ed ? `<button class="btn" style="margin-top:12px" onclick="saveYObj('${site}','${ent}')">Enregistrer les objectifs de facturation</button>` : ''}`;
+}
+async function saveYObj(site, entArg) {
+  const ent = (entArg != null ? entArg : S.payEnt) || '*', rows = [];
   for (let m = 1; m <= 12; m++) {
     const key = site + '|' + S.year + '|' + m, o = S.obj[key] || {}, vend = Object.assign({}, o.vend || {}), cur = Object.assign({}, vend[ent] || {});
     document.querySelectorAll(`.yobj[data-m="${m}"]`).forEach(i => { const v = i.value.trim(); if (v === '') delete cur[i.dataset.v]; else cur[i.dataset.v] = Number(v.replace(',', '.')) || 0; });
