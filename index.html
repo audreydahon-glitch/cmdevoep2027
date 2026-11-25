@@ -1074,7 +1074,8 @@ function payCalc(site, ent, P, m) {
     const fin = r => !!(r.fi || r.loa || r.lld);
     const liv = rs.length, nf = rs.filter(fin).length, ip = liv ? nf / liv : 0;
     const det = rs.map(r => {
-      if (isCess(r)) { const j = jStock(r), c = j != null && j > 60 ? P.cessPlus : P.cess60; return {r, type: `Cession ${j == null ? '' : j + ' j'}`, taux: null, com: c}; }
+      if (isCess(r)) { const j = jStock(r), fo = j != null && j > 60 ? P.cessPlus : P.cess60, mg = N(r.marge_vendeur);   // cession : forfait OU marge restante, le plus élevé, sans cumul
+        return {r, type: `Cession ${j == null ? '' : j + ' j'}`, taux: null, com: Math.max(fo, mg), cTxt: mg > fo ? `marge > forfait ${fo} €` : `forfait ${fo} €`}; }
       const t = fin(r) && ip * 100 >= P.ipTop ? P.top : P.base;
       const brut = N(r.marge_vendeur) * t / 100, com = Math.min(P.maxi, Math.max(P.mini, brut));
       return {r, type: fin(r) ? 'VO financé' : 'VO', taux: t, brut, com};
@@ -1106,7 +1107,7 @@ function payView(site) {
     t += `<tr class="${S.payOpen === x.v ? 'open' : ''}" style="cursor:pointer" onclick="S.payOpen=S.payOpen==='${x.v}'?null:'${x.v}';renderMain()"><td class="lab">${esc(x.v)} <span class="note">${S.payOpen === x.v ? '▾' : '▸'}</span></td><td>${fN(x.liv)}</td><td>${fN(x.nf)}</td><td class="${x.liv ? (x.ip * 100 >= P.ipTop ? 'pos' : 'neg') : 'z'}">${x.liv ? fP(x.ip) : '-'}</td><td>${e(x.comM)}</td><td>${e(x.cess)}</td><td>${e(x.caFI)}</td><td>${e(x.comFI)}${x.comFI ? ` <span class="note">${String(x.tFI).replace('.', ',')} %</span>` : ''}</td>
       <td>${x.fa ? `${x.fa} × ${P.fa} €` : '-'}</td><td>${x.bul ? `${x.bul} × ${P.bul} €` : '-'}</td><td>${x.rep ? `${x.rep} × ${P.rep} €` : '-'}</td>
       <td onclick="event.stopPropagation()"><input class="pobj" data-v="${esc(x.v)}" value="${x.obj == null ? '' : x.obj}" ${ed ? '' : 'disabled'} style="width:46px;text-align:center"></td><td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td class="tt"><b>${fE(x.tot)}</b></td></tr>`;
-    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="14"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'forfait' : d.taux + ' %'}</td><td>${d.taux == null ? '-' : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
+    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="14"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
   });
   t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td></td><td>${e(T('pf'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td></tr></table>`;
   const f = (k, lab, u) => `<div class="f"><label>${lab}</label><input class="ppi" data-k="${k}" value="${Array.isArray(P[k]) ? P[k].join(' / ') : P[k]}" ${ed ? '' : 'disabled'}><span class="note">${u || ''}</span></div>`;
@@ -1119,7 +1120,7 @@ function payView(site) {
   return `<div class="card"><div class="chead"><div><h3>Rémunération variable · ${esc(siteObj(site).label)}${ent ? ' · ' + esc(ent) : ''}</h3><div class="sub">${MOIS[m - 1]} ${S.year} · VO facturés dans le mois · cliquer sur un vendeur pour le détail</div></div>
     <div class="tools">${entSeg}${ed ? `<button class="btn ghost" onclick="savePObj('${site}')">Enregistrer les objectifs</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
     <div style="overflow:auto">${t}</div>
-    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € / maxi ${P.maxi} € par VO · cessions au forfait selon les jours de stock · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
+    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € / maxi ${P.maxi} € par VO · cessions : forfait selon les jours de stock ou marge restante si elle est plus élevée (sans cumul) · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
 }
 async function savePObj(site) {
   const m = S.month, key = site + '|' + S.year + '|' + m, ent = S.payEnt || '*', o = S.obj[key] || {site, annee: S.year, mois: m};
@@ -1144,7 +1145,7 @@ function exportPay(site) {
   Object.keys(PP).forEach(ent => {
     const P = Object.assign({}, PP_MBVO, PP[ent]), rows = [];
     for (let m = 1; m <= 12; m++) payCalc(site, ent, P, m).forEach(x => x.liv || x.tot ? rows.push({MOIS: MOIS[m - 1], VENDEUR: x.v, 'VO LIVRÉS': x.liv, 'FINANCÉS': x.nf, 'IP FI': Math.round(x.ip * 100) / 100,
-      'COM. MARGE': Math.round(x.comM), 'CESSIONS': x.cess, 'CA FI ÉLIGIBLE': Math.round(x.caFI), 'COM. FI': Math.round(x.comFI), 'FRAIS ADMIN': x.fa * P.fa, 'BULBEE': x.bul * P.bul, 'REPRISES': x.rep * P.rep,
+      'COM. MARGE': Math.round(x.comM), 'CESSIONS': Math.round(x.cess), 'CA FI ÉLIGIBLE': Math.round(x.caFI), 'COM. FI': Math.round(x.comFI), 'FRAIS ADMIN': x.fa * P.fa, 'BULBEE': x.bul * P.bul, 'REPRISES': x.rep * P.rep,
       'OBJ. FACTU.': x.obj, 'PRIME FACTU.': x.pf, 'TOTAL': Math.round(x.tot)}) : 0);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), ('REM ' + (ent || 'PARC')).slice(0, 31));
   });
