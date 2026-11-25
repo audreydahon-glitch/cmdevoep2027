@@ -148,6 +148,9 @@ body.narrow .pgrid{grid-template-columns:1fr}
 .pgt{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--c);margin-bottom:8px;padding-left:2px}
 .pcard{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer}
 .pcard:hover{background:#f6f9ff;border-color:#c9d6ee}.pcard b{color:var(--muted);font-weight:600}
+.mx.pay td,.mx.pay th{white-space:nowrap}.mx.pay tr.open td{background:#f6f9ff}
+.mx.pay tr.pdet>td{padding:6px 10px 14px 24px;background:#fbfcfe}.mx.pay tr.pdet .mx td,.mx.pay tr.pdet .mx th{font-size:12.5px;padding-top:6px;padding-bottom:6px}
+.ppg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.ppg .f input{width:100%}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
 .chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
 
@@ -549,6 +552,7 @@ function renderMain() {
     tabs.push(['cmd', `Commandes VO <span class="b">${n}</span>`]);
     tabs.push(['recap', 'Récap']);
     tabs.push(['param', 'Vendeurs & objectifs']);
+    if (canPay(site)) tabs.push(['pay', 'Rémunération']);
     tabs.push(['hist', 'Historique']);
   }
   else tabs.push(['recap', 'Récap']);
@@ -561,6 +565,7 @@ function renderMain() {
   if (S.tab === 'recap') b.innerHTML = site ? recapSite(site) : recapTotal();
   else if (S.tab === 'cmd') b.innerHTML = cmdView(site);
   else if (S.tab === 'param') b.innerHTML = paramView(site);
+  else if (S.tab === 'pay') b.innerHTML = payView(site);
   else if (S.tab === 'hist') { b.innerHTML = '<div class="card"><div class="empty">Chargement…</div></div>'; histView(site); }
   else if (S.tab === 'admin') { b.innerHTML = '<div class="card"><div class="empty">Chargement…</div></div>'; adminView(); }
 }
@@ -657,12 +662,12 @@ function tilesHtml(st, protech) {
   const na = st.v.__NA ? st.v.__NA.cde[0] : 0;
   if (st.sites.length === 1) R.push(['Non affectées', fN(na), 'commandes sans vendeur', null, na ? '#ff8a7a' : '#6cc292', na ? 'alert' : '']);
   else R.push(['Marge moy. / VO', c('liv') ? fE(c('marge') / c('liv')) : '-', `sur ${nf0.format(c('liv'))} VO livrés`, null, '#6cc292']);
-  const cumul = `<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois} ${S.year}</div><div class="ribbon">${R.map(([l, v, o, p, col, cls]) => `<div class="rb ${cls || ''}"><b>${v}</b>${({'Commandes': 'commandes', 'VO livrés': 'VO livrés', 'Marge réelle HT': 'de marge', 'Marge moy. / VO': 'marge moy. / VO', 'Non affectées': 'non affectées'})[l] || l}<div class="rbo">${o}${p != null ? ` · <span class="${p >= 1 ? 'pos' : 'neg'}">${fP(p)}</span>` : ''}</div></div>`).join('')}</div>`;
+  const cumul = `<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 2px">Cumul janvier → ${mois} ${S.year}</div><div class="ribbon">${R.map(([l, v, o, p, col, cls]) => `<div class="rb ${cls || ''}"><b style="${/^-\d|^−/.test(String(v).replace(/\s/g, '')) ? 'color:#d0453a' : ''}">${v}</b>${({'Commandes': 'commandes', 'VO livrés': 'VO livrés', 'Marge réelle HT': 'de marge', 'Marge moy. / VO': 'marge moy. / VO', 'Non affectées': 'non affectées'})[l] || l}<div class="rbo">${o}${p != null ? ` · <span class="${p >= 1 ? 'pos' : 'neg'}">${fP(p)}</span>` : ''}</div></div>`).join('')}</div>`;
   const liv = st.liv[m];
   const A = [['Frais admin', st.fa[m], '#7aa95c'], ['Eurodatacar', st.edc[m], '#4f9a8a'], ['Coyote', st.coy[m], '#ED7D31'],
     ['Bulbee', st.bul[m], '#d99a14'], ...(protech ? [['Protech', st.pro[m], '#7a5c99']] : []), ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
   const accRow = `<div class="accs" style="grid-template-columns:repeat(${A.length},1fr)">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div></div>`; }).join('')}</div>`;
-  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
+  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px;' : ''}${/^-\d|^−/.test(String(t[2]).replace(/\s/g, '')) ? 'color:#d0453a' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     ${cumul}`;
 }
 
@@ -686,7 +691,7 @@ const isHV = k => HORS_VOL.includes(k);
 const LEGACY = {'mb-cannet': 'mb-cannes', 'mb-le-cannet': 'mb-cannes', 'parc-nice': 'fmc-nice', 'nsa-nice': 'fmc-nice', 'parc-cannes': 'nsa-cannes', 'fmc-cannes': 'nsa-cannes', 'gva-audi-toulon': 'audi', 'gva-vw-toulon': 'vw-toulon', 'gva-ollioules': 'vw-ollioules', 'gva-six-fours': 'six-fours'};
 const mapSites = s => [...new Set((s || '').split(',').map(x => x.trim()).filter(Boolean).map(x => LEGACY[x] || x))];
 function mrow(label, arr, f, cls) {
-  return `<tr class="${cls || ''}"><td class="lab">${label}</td>${arr.slice(1).map(v => `<td class="${v ? '' : 'z'}">${f(v)}</td>`).join('')}<td class="tt">${f(arr[0])}</td></tr>`;
+  return `<tr class="${cls || ''}"><td class="lab">${label}</td>${arr.slice(1).map(v => `<td class="${v < 0 ? 'neg' : v ? '' : 'z'}">${f(v)}</td>`).join('')}<td class="tt ${arr[0] < 0 ? 'neg' : ''}">${f(arr[0])}</td></tr>`;   // montants négatifs en rouge
 }
 function hdr(title, last) { return `<tr><th class="lab">${title}</th>${MOIS_C.map(m => `<th>${m}</th>`).join('')}<th class="tt">${last || 'TOTAL'}</th></tr>`; }
 function objRows(tot, obj, f) {
@@ -792,14 +797,14 @@ function itemCharts(K, per, st, f, title) {
   const colOf = (v, o) => v == null ? '#c3cad6' : K === 'tfi' ? (v >= (o || 0.4) ? '#2e9a5b' : '#d0453a') : o ? (v >= o ? '#2e9a5b' : '#d0453a') : '#6f86ad';   // gris-bleu quand pas d'objectif
   const tv = V(st), to = O(st);
   const rank = `<div class="acg" style="--c:${COL}"><div class="acgh"><b>Classement des parcs</b><span>${cum ? 'cumul janvier → ' + mo : 'mois de ' + mo}</span></div>
-    ${rows.map(([s, v, o, d], i) => { const c = colOf(v, o); return `<div class="acr"><div class="acn"><span class="rk">${i + 1}</span><button class="lnk" style="color:var(--ink)" onclick="pickRecap('${s}')">${esc(siteObj(s).label)}</button></div><div class="act">${o ? `<em style="left:${(100 * Math.min(o, sc) / sc).toFixed(1)}%"></em>` : ''}<i style="width:${v == null ? 0 : (100 * v / sc).toFixed(1)}%;background:${c}"></i></div><div class="acv" style="color:${v == null ? 'var(--muted)' : c}">${v == null ? '-' : f(v)}</div><div class="acx">${d}</div></div>`; }).join('')}
+    ${rows.map(([s, v, o, d], i) => { const c = colOf(v, o); return `<div class="acr"><div class="acn"><span class="rk">${i + 1}</span><button class="lnk" style="color:var(--ink)" onclick="pickRecap('${s}')">${esc(siteObj(s).label)}</button></div><div class="act">${o ? `<em style="left:${(100 * Math.min(o, sc) / sc).toFixed(1)}%"></em>` : ''}<i style="width:${v == null ? 0 : (100 * v / sc).toFixed(1)}%;background:${c}"></i></div><div class="acv" style="color:${v == null ? 'var(--muted)' : v < 0 ? '#d0453a' : c}">${v == null ? '-' : f(v)}</div><div class="acx">${d}</div></div>`; }).join('')}
     <div class="acr tot"><div class="acn">Total ${esc(selLabel())}</div><div></div><div class="acv">${tv == null ? '-' : f(tv)}</div><div class="acx">${to ? `obj. ${f(to)} · <b class="${(tv || 0) >= to ? 'ok' : 'ko'}">${fP((tv || 0) / to)}</b>` : ''}</div></div></div>`;
   // Évolution mensuelle du total (barres) avec l'objectif du mois (trait)
   const mv = [...Array(12)].map((_, i) => K === 'tfi' ? (st.liv[i + 1] ? st.fi[i + 1] / st.liv[i + 1] : null) : st[K][i + 1]);
   const mobj = [...Array(12)].map((_, i) => OK ? st[OK][i + 1] : 0);
   const msc = Math.max(K === 'tfi' ? 0.5 : 1, ...mv.map(v => v || 0), ...mobj);
   const evo = `<div class="acg" style="--c:${COL}"><div class="acgh"><b>Évolution mensuelle</b><span>total ${esc(selLabel())} ${S.year}${OK ? ' · trait : objectif du mois' : ''}</span></div>
-    <div class="evo">${mv.map((v, i) => { const o = mobj[i], c = i + 1 > m ? '#dfe4ec' : colOf(v, o); return `<div class="evc${i + 1 === m ? ' cur' : ''}"><div class="evv">${v == null || (!v && i + 1 > m) ? '' : f === fE ? (Math.abs(v) >= 1000 ? nf0.format(Math.round(v / 1000)) + ' k€' : f(v)) : f(v)}</div><div class="evb">${o ? `<em style="bottom:${(100 * o / msc).toFixed(1)}%"></em>` : ''}<i style="height:${v == null ? 0 : (100 * v / msc).toFixed(1)}%;background:${c}"></i></div><div class="evm">${MOIS_C[i]}</div></div>`; }).join('')}</div></div>`;
+    <div class="evo">${mv.map((v, i) => { const o = mobj[i], c = i + 1 > m ? '#dfe4ec' : colOf(v, o); return `<div class="evc${i + 1 === m ? ' cur' : ''}"><div class="evv" style="${v < 0 ? 'color:#d0453a' : ''}">${v == null || (!v && i + 1 > m) ? '' : f === fE ? (Math.abs(v) >= 1000 ? nf0.format(Math.round(v / 1000)) + ' k€' : f(v)) : f(v)}</div><div class="evb">${o ? `<em style="bottom:${(100 * o / msc).toFixed(1)}%"></em>` : ''}<i style="height:${v == null ? 0 : (100 * v / msc).toFixed(1)}%;background:${c}"></i></div><div class="evm">${MOIS_C[i]}</div></div>`; }).join('')}</div></div>`;
   const tog = `<div class="seg" style="margin:14px 20px 0">${[['mois', 'Mois de ' + mo], ['cum', 'Cumul janvier → ' + mo]].map(([k, l]) => `<button aria-pressed="${(S.accPer === 'mois') === (k === 'mois')}" onclick="S.accPer='${k}';renderMain()">${l}</button>`).join('')}</div>`;
   const kp = [[cum ? 'Cumul' : 'Mois', tv == null ? '-' : f(tv)]];
   if (to) kp.push(['Objectif', f(to)], ['Réalisation', fP((tv || 0) / to), (tv || 0) >= to ? 'ok' : 'ko']);
@@ -900,7 +905,7 @@ function cmdView(site) {
   const h = `<tr class="h">${GC.map(c => `<th style="background:${c[3]};color:${c[4] || '#000'}">${c[1]}</th>`).join('')}</tr>`;
   const cg = `<colgroup>${GC.map(c => `<col style="width:${COLW[c[0]]}px">`).join('')}</colgroup>`;
   const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}" onclick="openCmd('${r.id}')">${GC.map(c => cell(c, r)).join('')}</tr>`).join('');
-  const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r">${nf0.format(Math.round(tot(k)))} €</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
+  const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r ${tot(k) < 0 ? 'neg' : ''}">${nf0.format(Math.round(tot(k)))} €</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
   return `<div class="card"><div class="chead"><div><h3>Commandes VO · ${esc(siteObj(site).label)}</h3></div>
       <div class="tools"><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
     <div class="filters"><div class="seg">${vues.map(v => `<button aria-pressed="${S.f.vue === v[0]}" onclick="S.f.vue='${v[0]}';renderMain()">${v[1]}</button>`).join('')}</div>
@@ -1043,6 +1048,107 @@ async function saveParams(site) {
   const { error } = await S.sb.from('tc_params').update(o).eq('site', site);
   if (error) { flash('Erreur : ' + error.message); return; }
   Object.assign(S.params[site], o); flash('Listes enregistrées'); renderMain();
+}
+
+// ====================================================================
+//  Rémunération (part variable des vendeurs) — visible chefs des ventes, directeurs, admins
+//  Pay plan par parc et par entité : barème par défaut ci-dessous, modifiable dans l'onglet (enregistré dans tc_params.payplan)
+// ====================================================================
+const PP_MBVO = {nom: 'Pay plan VO MB 2026', base: 6, top: 9, ipTop: 40, mini: 150, maxi: 1500, cess60: 150, cessPlus: 180,
+  fiMin: 8000, contrat: 0, t1: 30, t2: 40, fiA: [0.2, 0.3, 0.4], fiB: [0.4, 0.6, 0.8], fa: 50, bul: 30, rep: 50, f0: 60, f1: 80, f2: 100};
+const PP_DEF = {'mb-villeneuve': {MB: PP_MBVO}, 'mb-cannes': {'': PP_MBVO}};
+const PP_EXCL = [...HORS_VOL, 'DIRECTION'];   // pas de rémunération pour les ventes hors volume et la direction
+const canPay = site => S.me.role === 'admin' || (['chef', 'directeur'].includes(S.me.role) && S.me.sites.includes(site));
+const ppOf = site => { const p = (S.params[site] || {}).payplan; return p && Object.keys(p).length ? p : (PP_DEF[site] || {}); };
+const isCess = r => /^O/i.test(String(r.cession || '').trim());
+const jStock = r => { const n = parseInt(String(r.jours_stock || '').replace(/\D/g, ''), 10); return isNaN(n) ? null : n; };
+function payCalc(site, ent, P, m) {
+  const ents = entList(site), first = ents[0] || '';
+  const rows = S.rows.filter(r => r.site === site && !r.annulation && ym(r.date_fact)[0] === S.year && ym(r.date_fact)[1] === m &&
+    (!ent || ((r.entite || first) || '').toUpperCase() === ent));
+  const vobj = ((S.obj[site + '|' + S.year + '|' + m] || {}).vend || {})[ent || '*'] || {};
+  const by = {};
+  rows.forEach(r => { const v = (r.vendeur || '').trim().toUpperCase(); if (!v || PP_EXCL.includes(v)) return; (by[v] || (by[v] = [])).push(r); });
+  vendList(site).filter(v => !PP_EXCL.includes(v)).forEach(v => by[v] || (by[v] = []));
+  const out = Object.entries(by).map(([v, rs]) => {
+    const fin = r => !!(r.fi || r.loa || r.lld);
+    const liv = rs.length, nf = rs.filter(fin).length, ip = liv ? nf / liv : 0;
+    const det = rs.map(r => {
+      if (isCess(r)) { const j = jStock(r), c = j != null && j > 60 ? P.cessPlus : P.cess60; return {r, type: `Cession ${j == null ? '' : j + ' j'}`, taux: null, com: c}; }
+      const t = fin(r) && ip * 100 >= P.ipTop ? P.top : P.base;
+      const brut = N(r.marge_vendeur) * t / 100, com = Math.min(P.maxi, Math.max(P.mini, brut));
+      return {r, type: fin(r) ? 'VO financé' : 'VO', taux: t, brut, com};
+    });
+    const comM = det.filter(d => d.taux != null).reduce((a, d) => a + d.com, 0), cess = det.filter(d => d.taux == null).reduce((a, d) => a + d.com, 0);
+    const caFI = rs.filter(r => N(r.ca_fin) >= P.fiMin).reduce((a, r) => a + N(r.ca_fin), 0);
+    const tr = ip * 100 <= P.t1 ? 0 : ip * 100 <= P.t2 ? 1 : 2, haut = P.contrat > 0 && caFI > P.contrat;
+    const tFI = (haut ? P.fiB : P.fiA)[tr], comFI = caFI * tFI / 100;
+    const fa = rs.filter(r => r.frais_admin).length, bul = rs.filter(r => r.bulbbee).length, rep = rs.filter(r => r.reprise).length;
+    const obj = vobj[v] == null || vobj[v] === '' ? null : N(vobj[v]);
+    const pv = obj == null || !obj || liv < obj ? 0 : liv >= obj + 2 ? P.f2 : liv >= obj + 1 ? P.f1 : P.f0, pf = pv * liv;
+    const tot = comM + cess + comFI + fa * P.fa + bul * P.bul + rep * P.rep + pf;
+    return {v, liv, nf, ip, det, comM, cess, caFI, tFI, comFI, fa, bul, rep, obj, pv, pf, tot};
+  });
+  const ord = vendList(site);
+  return out.sort((a, b) => (ord.indexOf(a.v) + 1 || 999) - (ord.indexOf(b.v) + 1 || 999));
+}
+function payView(site) {
+  if (!canPay(site)) return '<div class="card"><div class="empty">Accès réservé aux chefs des ventes, directeurs et administrateurs.</div></div>';
+  const PP = ppOf(site), keys = Object.keys(PP);
+  if (!keys.length) return `<div class="card"><div class="empty"><b>Pas encore de pay plan pour ce parc</b>Envoyez le pay plan pour qu'il soit paramétré.</div></div>`;
+  if (!keys.includes(S.payEnt)) S.payEnt = keys[0];
+  const ent = S.payEnt, P = Object.assign({}, PP_MBVO, PP[ent]), m = S.month, ed = canParam(site);
+  const L = payCalc(site, ent, P, m), T = k => L.reduce((a, x) => a + (x[k] || 0), 0);
+  const e = v => v ? fE(v) : '-';
+  const entSeg = keys.length > 1 ? `<div class="seg">${keys.map(k => `<button aria-pressed="${k === ent}" onclick="S.payEnt='${k}';renderMain()">${esc(k || 'Parc')}</button>`).join('')}</div>` : '';
+  let t = `<table class="mx pay"><tr><th class="lab">Vendeur</th><th>VO livrés</th><th>Financés</th><th>IP FI</th><th>Com. marge</th><th>Cessions</th><th>CA FI éligible</th><th>Com. FI</th><th>Frais admin</th><th>Bulbee</th><th>Reprises</th><th>Obj. factu.</th><th>Prime factu.</th><th class="tt">TOTAL</th></tr>`;
+  L.forEach(x => {
+    t += `<tr class="${S.payOpen === x.v ? 'open' : ''}" style="cursor:pointer" onclick="S.payOpen=S.payOpen==='${x.v}'?null:'${x.v}';renderMain()"><td class="lab">${esc(x.v)} <span class="note">${S.payOpen === x.v ? '▾' : '▸'}</span></td><td>${fN(x.liv)}</td><td>${fN(x.nf)}</td><td class="${x.liv ? (x.ip * 100 >= P.ipTop ? 'pos' : 'neg') : 'z'}">${x.liv ? fP(x.ip) : '-'}</td><td>${e(x.comM)}</td><td>${e(x.cess)}</td><td>${e(x.caFI)}</td><td>${e(x.comFI)}${x.comFI ? ` <span class="note">${String(x.tFI).replace('.', ',')} %</span>` : ''}</td>
+      <td>${x.fa ? `${x.fa} × ${P.fa} €` : '-'}</td><td>${x.bul ? `${x.bul} × ${P.bul} €` : '-'}</td><td>${x.rep ? `${x.rep} × ${P.rep} €` : '-'}</td>
+      <td onclick="event.stopPropagation()"><input class="pobj" data-v="${esc(x.v)}" value="${x.obj == null ? '' : x.obj}" ${ed ? '' : 'disabled'} style="width:46px;text-align:center"></td><td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td class="tt"><b>${fE(x.tot)}</b></td></tr>`;
+    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="14"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'forfait' : d.taux + ' %'}</td><td>${d.taux == null ? '-' : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
+  });
+  t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td></td><td>${e(T('pf'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td></tr></table>`;
+  const f = (k, lab, u) => `<div class="f"><label>${lab}</label><input class="ppi" data-k="${k}" value="${Array.isArray(P[k]) ? P[k].join(' / ') : P[k]}" ${ed ? '' : 'disabled'}><span class="note">${u || ''}</span></div>`;
+  const bareme = `<details class="card" style="margin-top:14px"${S.ppOpen ? ' open' : ''} ontoggle="S.ppOpen=this.open"><summary style="cursor:pointer;padding:14px 18px;font-weight:700">Barème · ${esc(P.nom)}${ent ? ' · ' + esc(ent) : ''}</summary><div style="padding:0 18px 18px">
+    <div class="ppg">${f('base', 'Com. marge vendeur', '%')}${f('top', 'Com. VO financé (si IP ≥ seuil)', '%')}${f('ipTop', 'Seuil IP FI', '%')}${f('mini', 'Mini par VO', '€')}${f('maxi', 'Maxi par VO', '€')}
+    ${f('cess60', 'Cession 0-60 j', '€')}${f('cessPlus', 'Cession > 60 j', '€')}${f('fiMin', 'Montant FI mini', '€')}${f('contrat', 'Contrat métier mensuel (CA FI)', '€ · 0 = non renseigné')}
+    ${f('t1', 'Tranche IP 1 jusqu\'à', '%')}${f('t2', 'Tranche IP 2 jusqu\'à', '%')}${f('fiA', 'Taux FI < contrat (3 tranches)', '% du CA FI')}${f('fiB', 'Taux FI > contrat (3 tranches)', '% du CA FI')}
+    ${f('fa', 'Frais admin (MAD)', '€ / VO')}${f('bul', 'Bulbee', '€ / VO')}${f('rep', 'Reprise VOP', '€ / VO')}${f('f0', 'Obj. factu. atteint', '€ / VO')}${f('f1', 'Obj. factu. +1', '€ / VO')}${f('f2', 'Obj. factu. +2 et plus', '€ / VO')}</div>
+    ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème</button>` : ''}</div></details>`;
+  return `<div class="card"><div class="chead"><div><h3>Rémunération variable · ${esc(siteObj(site).label)}${ent ? ' · ' + esc(ent) : ''}</h3><div class="sub">${MOIS[m - 1]} ${S.year} · VO facturés dans le mois · cliquer sur un vendeur pour le détail</div></div>
+    <div class="tools">${entSeg}${ed ? `<button class="btn ghost" onclick="savePObj('${site}')">Enregistrer les objectifs</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
+    <div style="overflow:auto">${t}</div>
+    <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € / maxi ${P.maxi} € par VO · cessions au forfait selon les jours de stock · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
+}
+async function savePObj(site) {
+  const m = S.month, key = site + '|' + S.year + '|' + m, ent = S.payEnt || '*', o = S.obj[key] || {site, annee: S.year, mois: m};
+  const vend = Object.assign({}, o.vend || {}); const cur = Object.assign({}, vend[ent || '*'] || {});
+  document.querySelectorAll('.pobj').forEach(i => { const v = i.value.trim(); if (v === '') delete cur[i.dataset.v]; else cur[i.dataset.v] = Number(v.replace(',', '.')); });
+  vend[ent || '*'] = cur;
+  const { error } = await S.sb.from('tc_objectifs').upsert({site, annee: S.year, mois: m, vend});
+  if (error) { flash('Erreur : ' + error.message); return; }
+  S.obj[key] = Object.assign({}, o, {vend}); flash('Objectifs vendeurs enregistrés'); renderMain();
+}
+async function savePP(site) {
+  const PP = JSON.parse(JSON.stringify(ppOf(site))), ent = S.payEnt, P = Object.assign({}, PP_MBVO, PP[ent]);
+  document.querySelectorAll('.ppi').forEach(i => { const k = i.dataset.k, v = i.value;
+    P[k] = Array.isArray(PP_MBVO[k]) ? v.split('/').map(x => Number(x.trim().replace(',', '.')) || 0) : Number(v.replace(/\s/g, '').replace(',', '.')) || 0; });
+  PP[ent] = P;
+  const { error } = await S.sb.from('tc_params').update({payplan: PP}).eq('site', site);
+  if (error) { flash('Erreur : ' + error.message); return; }
+  S.params[site].payplan = PP; flash('Barème enregistré'); renderMain();
+}
+function exportPay(site) {
+  const PP = ppOf(site), wb = XLSX.utils.book_new();
+  Object.keys(PP).forEach(ent => {
+    const P = Object.assign({}, PP_MBVO, PP[ent]), rows = [];
+    for (let m = 1; m <= 12; m++) payCalc(site, ent, P, m).forEach(x => x.liv || x.tot ? rows.push({MOIS: MOIS[m - 1], VENDEUR: x.v, 'VO LIVRÉS': x.liv, 'FINANCÉS': x.nf, 'IP FI': Math.round(x.ip * 100) / 100,
+      'COM. MARGE': Math.round(x.comM), 'CESSIONS': x.cess, 'CA FI ÉLIGIBLE': Math.round(x.caFI), 'COM. FI': Math.round(x.comFI), 'FRAIS ADMIN': x.fa * P.fa, 'BULBEE': x.bul * P.bul, 'REPRISES': x.rep * P.rep,
+      'OBJ. FACTU.': x.obj, 'PRIME FACTU.': x.pf, 'TOTAL': Math.round(x.tot)}) : 0);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), ('REM ' + (ent || 'PARC')).slice(0, 31));
+  });
+  XLSX.writeFile(wb, `Remuneration VO ${siteObj(site).label.replace(/[\\/:*?"<>|]/g, '-')} ${S.year}.xlsx`);
 }
 
 // ====================================================================
