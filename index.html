@@ -1077,6 +1077,13 @@ const PP_DEF = {'mb-villeneuve': {MB: PP_MBVO}, 'mb-cannes': {'': PP_MBVO}};
 const PP_EXCL = [...HORS_VOL, 'DIRECTION'];   // pas de rémunération pour les ventes hors volume et la direction
 const canPay = site => S.me.role === 'admin' || (['chef', 'directeur'].includes(S.me.role) && S.me.sites.includes(site));
 const ppOf = site => { const p = (S.params[site] || {}).payplan; return p && Object.keys(p).length ? p : (PP_DEF[site] || {}); };
+// Barème par mois : chaque enregistrement s'applique à partir du mois choisi ; les mois précédents gardent leur barème
+const ymKey = (y, m) => y + '-' + String(m).padStart(2, '0');
+function ppAt(PP, ent, y, m) {
+  const b = Object.assign({}, PP[ent] || {}), v = b.v || {}; delete b.v;
+  const k = Object.keys(v).filter(x => x <= ymKey(y, m)).sort().pop();
+  return Object.assign({}, PP_MBVO, b, k ? v[k] : {}, {depuis: k || null});
+}
 const isCess = r => /^O/i.test(String(r.cession || '').trim());
 const jStock = r => { const n = parseInt(String(r.jours_stock || '').replace(/\D/g, ''), 10); return isNaN(n) ? null : n; };
 function payCalc(site, ent, P, m) {
@@ -1116,30 +1123,31 @@ function payView(site) {
   const PP = ppOf(site), keys = Object.keys(PP);
   if (!keys.length) return `<div class="card"><div class="empty"><b>Pas encore de pay plan pour ce parc</b>Envoyez le pay plan pour qu'il soit paramétré.</div></div>`;
   if (!keys.includes(S.payEnt)) S.payEnt = keys[0];
-  const ent = S.payEnt, P = Object.assign({}, PP_MBVO, PP[ent]), m = S.month, ed = canParam(site);
+  const ent = S.payEnt, m = S.month, P = ppAt(PP, ent, S.year, m), ed = canParam(site);
   const L = payCalc(site, ent, P, m), T = k => L.reduce((a, x) => a + (x[k] || 0), 0);
   const e = v => v ? fE(v) : '-';
   const entSeg = keys.length > 1 ? `<div class="seg">${keys.map(k => `<button aria-pressed="${k === ent}" onclick="S.payEnt='${k}';renderMain()">${esc(k || 'Parc')}</button>`).join('')}</div>` : '';
-  let t = `<table class="mx pay"><tr><th class="lab">Vendeur</th><th>VO livrés</th><th>Financés</th><th>IP FI</th><th>Com. marge</th><th>Cessions</th><th>CA FI éligible</th><th>Taux FI</th><th>Com. FI</th><th>Frais admin</th><th>Bulbee</th><th>Reprises</th><th>Obj. factu.</th><th>Prime factu.</th><th>Animation</th><th class="tt">TOTAL</th><th class="lab">Commentaire</th></tr>`;
+  let t = `<table class="mx pay"><tr><th class="lab">Vendeur</th><th>VO livrés</th><th>Financés</th><th>IP FI</th><th>Com. marge</th><th>Cessions</th><th>CA FI éligible</th><th>Taux FI</th><th>Com. FI</th><th>Frais admin</th><th>Bulbee</th><th>Reprises</th><th>Prime factu.</th><th>Animation</th><th class="tt">TOTAL</th><th class="lab">Commentaire</th></tr>`;
   const LV = S.payOpen && L.some(x => x.v === S.payOpen) ? L.filter(x => x.v === S.payOpen) : L;
   LV.forEach(x => {
     t += `<tr class="${S.payOpen === x.v ? 'open' : ''}" style="cursor:pointer" onclick="S.payOpen=S.payOpen==='${x.v}'?null:'${x.v}';renderMain()"><td class="lab">${S.payOpen === x.v ? '<span class="note">← tous</span> ' : ''}${esc(x.v)}${S.payOpen === x.v ? '' : ' <span class="note">▸</span>'}</td><td>${fN(x.liv)}</td><td>${fN(x.nf)}</td><td class="${x.liv ? (x.ip * 100 >= P.ipTop ? 'pos' : 'neg') : 'z'}">${x.liv ? fP(x.ip) : '-'}</td><td>${e(x.comM)}</td><td>${e(x.cess)}</td><td>${e(x.caFI)}</td><td>${x.caFI ? String(x.tFI).replace('.', ',') + ' %' : '-'}</td><td>${e(x.comFI)}</td>
       <td>${x.fa ? `${x.fa} × ${P.fa} €` : '-'}</td><td>${x.bul ? `${x.bul} × ${P.bul} €` : '-'}</td><td>${x.rep ? `${x.rep} × ${P.rep} €` : '-'}</td>
-      <td onclick="event.stopPropagation()"><input class="pobj" data-v="${esc(x.v)}" value="${x.obj == null ? '' : x.obj}" ${ed ? '' : 'disabled'} style="width:46px;text-align:center"></td><td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td onclick="event.stopPropagation()"><input class="panim" data-v="${esc(x.v)}" value="${x.anim || ''}" ${ed ? '' : 'disabled'} placeholder="€" style="width:70px;text-align:center"></td><td class="tt"><b>${fE(x.tot)}</b></td><td onclick="event.stopPropagation()"><input class="pcom" data-v="${esc(x.v)}" value="${esc(x.com)}" ${ed ? "" : "disabled"} style="width:150px"></td></tr>`;
-    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="17"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
+      <td>${x.pf ? `${fE(x.pf)} <span class="note">${x.pv} €/VO</span>` : '-'}</td><td onclick="event.stopPropagation()"><input class="panim" data-v="${esc(x.v)}" value="${x.anim || ''}" ${ed ? '' : 'disabled'} placeholder="€" style="width:70px;text-align:center"></td><td class="tt"><b>${fE(x.tot)}</b></td><td onclick="event.stopPropagation()"><input class="pcom" data-v="${esc(x.v)}" value="${esc(x.com)}" ${ed ? "" : "disabled"} style="width:150px"></td></tr>`;
+    if (S.payOpen === x.v) t += `<tr class="pdet"><td colspan="16"><table class="mx"><tr><th class="lab">Date fact.</th><th>Immat</th><th>Modèle</th><th>Client</th><th>Type</th><th>Marge vendeur</th><th>Taux</th><th>Calcul</th><th>Commission</th><th>CA FI</th></tr>${x.det.map(d => `<tr><td class="lab">${fD(d.r.date_fact)}</td><td>${esc(d.r.immat || '')}</td><td>${esc(d.r.modele || '')}</td><td>${esc(d.r.client || '')}</td><td>${d.type}</td><td class="${N(d.r.marge_vendeur) < 0 ? 'neg' : ''}">${e(N(d.r.marge_vendeur))}</td><td>${d.taux == null ? 'cession' : d.taux + ' %'}</td><td>${d.taux == null ? d.cTxt : d.brut < P.mini ? `${fE(d.brut || 0)} → mini` : d.brut > P.maxi ? `${fE(d.brut)} → maxi` : fE(d.brut)}</td><td><b>${fE(d.com)}</b></td><td>${N(d.r.ca_fin) ? fE(N(d.r.ca_fin)) + (N(d.r.ca_fin) < P.fiMin ? ' <span class="note">< mini</span>' : '') : '-'}</td></tr>`).join('') || '<tr><td colspan="10" class="lab">Aucun VO facturé ce mois</td></tr>'}</table></td></tr>`;
   });
-  if (LV !== L) t += '</table>'; else t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td></td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td></td><td>${e(T('pf'))}</td><td>${e(T('anim'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td><td></td></tr></table>`;   // ligne Total seulement quand tous les vendeurs sont affichés
+  if (LV !== L) t += '</table>'; else t += `<tr class="sub"><td class="lab">Total</td><td>${fN(T('liv'))}</td><td>${fN(T('nf'))}</td><td>${T('liv') ? fP(T('nf') / T('liv')) : '-'}</td><td>${e(T('comM'))}</td><td>${e(T('cess'))}</td><td>${e(T('caFI'))}</td><td></td><td>${e(T('comFI'))}</td><td>${e(T('fa') * P.fa)}</td><td>${e(T('bul') * P.bul)}</td><td>${e(T('rep') * P.rep)}</td><td>${e(T('pf'))}</td><td>${e(T('anim'))}</td><td class="tt"><b>${fE(T('tot'))}</b></td><td></td></tr></table>`;   // ligne Total seulement quand tous les vendeurs sont affichés
   const f = (k, lab, u) => `<div class="f"><label>${lab}</label><div class="ppin"><input class="ppi" data-k="${k}" value="${Array.isArray(P[k]) ? P[k].join(' / ') : P[k]}" ${ed ? '' : 'disabled'}><span>${u || ''}</span></div></div>`;
-  const bareme = `<details class="card" style="margin-top:14px"${S.ppOpen ? ' open' : ''} ontoggle="S.ppOpen=this.open"><summary style="cursor:pointer;padding:14px 18px;font-weight:700">Barème · ${esc(P.nom)}${ent ? ' · ' + esc(ent) : ''}</summary><div style="padding:0 18px 18px">
+  const bareme = `<details class="card" style="margin-top:14px"${S.ppOpen ? ' open' : ''} ontoggle="S.ppOpen=this.open"><summary style="cursor:pointer;padding:14px 18px;font-weight:700">Barème de ${MOIS[m - 1].toLowerCase()} ${S.year} · ${esc(P.nom)}${ent ? ' · ' + esc(ent) : ''}</summary><div style="padding:0 18px 18px">
+    <div class="sub" style="margin-bottom:12px">${P.depuis ? `Barème en vigueur depuis ${MOIS[+P.depuis.slice(5) - 1].toLowerCase()} ${P.depuis.slice(0, 4)}.` : 'Barème de départ du pay plan.'} Une modification enregistrée ici s'applique à partir de ${MOIS[m - 1].toLowerCase()} ${S.year} et aux mois suivants ; les mois précédents gardent leur barème.${(() => { const v = Object.keys((PP[ent] || {}).v || {}).sort(); return v.length ? ' Changements : ' + v.map(k => MOIS[+k.slice(5) - 1].toLowerCase() + ' ' + k.slice(0, 4)).join(', ') + '.' : ''; })()}</div>
     <div class="ppg">${f('base', 'Com. marge vendeur', '%')}${f('top', 'Com. VO financé (si IP ≥ seuil)', '%')}${f('ipTop', 'Seuil IP FI', '%')}${f('mini', 'Mini par VO', '€')}${f('maxi', 'Maxi par VO', '€')}
     ${f('cess60', 'Cession 0-60 j', '€')}${f('cessPlus', 'Cession > 60 j', '€')}${f('fiMin', 'Montant FI mini', '€')}${f('contrat', 'Contrat métier mensuel (CA FI) · 0 = non renseigné', '€')}
     ${f('t1', 'Tranche IP 1 jusqu\'à', '%')}${f('t2', 'Tranche IP 2 jusqu\'à', '%')}${f('fiA', 'Taux FI < contrat (3 tranches)', '%')}${f('fiB', 'Taux FI > contrat (3 tranches)', '%')}
     ${f('fa', 'Frais admin (MAD)', '€ / VO')}${f('bul', 'Bulbee', '€ / VO')}${f('rep', 'Reprise VOP', '€ / VO')}${f('f0', 'Obj. factu. atteint', '€ / VO')}${f('f1', 'Obj. factu. +1', '€ / VO')}${f('f2', 'Obj. factu. +2 et plus', '€ / VO')}</div>
     <div class="ppg" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="f"><label>Animation</label><textarea class="ppt" data-k="anim" rows="3" ${ed ? '' : 'disabled'} placeholder="Ex. challenge du mois, prime spéciale…">${esc(P.anim || '')}</textarea></div><div class="f"><label>Commentaires</label><textarea class="ppt" data-k="comm" rows="3" ${ed ? '' : 'disabled'}>${esc(P.comm || '')}</textarea></div></div>
-    ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème</button>` : ''}
+    ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème à partir de ${MOIS[m - 1].toLowerCase()}</button>` : ''}
     ${yObjGrid(site, ent, L.map(x => x.v), ed)}</div></details>`;
   return `<div class="card"><div class="chead"><div><h3>Rémunération variable · ${esc(siteObj(site).label)}${ent ? ' · ' + esc(ent) : ''}</h3><div class="sub">${MOIS[m - 1]} ${S.year} · VO facturés dans le mois · cliquer sur un vendeur pour le détail</div></div>
-    <div class="tools">${entSeg}${ed ? `<button class="btn" onclick="savePObj('${site}')">Enregistrer objectifs, animation et commentaires</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
+    <div class="tools">${entSeg}${ed ? `<button class="btn" onclick="savePObj('${site}')">Enregistrer animation et commentaires</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
     <div style="overflow:auto">${t}</div>
     <p class="note" style="padding:10px 18px 14px">Com. marge : ${P.base} % de la marge vendeur, ${P.top} % sur un VO financé si l'IP FI du mois ≥ ${P.ipTop} % · mini ${P.mini} € (même si la marge est négative) / maxi ${P.maxi} € par VO · cessions au forfait selon les jours de stock · Com. FI : % du CA FI des dossiers ≥ ${fE(P.fiMin)} selon l'IP du mois · prime facturation par VO si l'objectif du vendeur est atteint · hors ${PP_EXCL.join(', ')}.</p></div>${bareme}`;
 }
@@ -1176,22 +1184,22 @@ async function saveYObj(site, entArg) {
   flash('Objectifs de facturation enregistrés'); renderMain();
 }
 async function savePP(site) {
-  const PP = JSON.parse(JSON.stringify(ppOf(site))), ent = S.payEnt, P = Object.assign({}, PP_MBVO, PP[ent]);
+  const PP = JSON.parse(JSON.stringify(ppOf(site))), ent = S.payEnt, P = ppAt(PP, ent, S.year, S.month); delete P.depuis;
   document.querySelectorAll('.ppi').forEach(i => { const k = i.dataset.k, v = i.value;
     P[k] = Array.isArray(PP_MBVO[k]) ? v.split('/').map(x => Number(x.trim().replace(',', '.')) || 0) : Number(v.replace(/\s/g, '').replace(',', '.')) || 0; });
   document.querySelectorAll('.ppt').forEach(i => P[i.dataset.k] = i.value.trim());
-  PP[ent] = P;
+  const b = PP[ent] || {}; b.v = Object.assign({}, b.v || {}, {[ymKey(S.year, S.month)]: P}); PP[ent] = b;
   const { error } = await S.sb.from('tc_params').update({payplan: PP}).eq('site', site);
   if (error) { flash('Erreur : ' + error.message); return; }
-  S.params[site].payplan = PP; flash('Barème enregistré'); renderMain();
+  S.params[site].payplan = PP; flash(`Barème enregistré à partir de ${MOIS[S.month - 1].toLowerCase()} ${S.year}`); renderMain();
 }
 function exportPay(site) {
   const PP = ppOf(site), wb = XLSX.utils.book_new();
   Object.keys(PP).forEach(ent => {
-    const P = Object.assign({}, PP_MBVO, PP[ent]), rows = [];
-    for (let m = 1; m <= 12; m++) payCalc(site, ent, P, m).forEach(x => x.liv || x.tot || x.com ? rows.push({MOIS: MOIS[m - 1], VENDEUR: x.v, 'VO LIVRÉS': x.liv, 'FINANCÉS': x.nf, 'IP FI': Math.round(x.ip * 100) / 100,
+    const rows = [];
+    for (let m = 1; m <= 12; m++) { const P = ppAt(PP, ent, S.year, m); payCalc(site, ent, P, m).forEach(x => x.liv || x.tot || x.com ? rows.push({MOIS: MOIS[m - 1], VENDEUR: x.v, 'VO LIVRÉS': x.liv, 'FINANCÉS': x.nf, 'IP FI': Math.round(x.ip * 100) / 100,
       'COM. MARGE': Math.round(x.comM), 'CESSIONS': Math.round(x.cess), 'CA FI ÉLIGIBLE': Math.round(x.caFI), 'TAUX FI %': x.tFI, 'COM. FI': Math.round(x.comFI), 'FRAIS ADMIN': x.fa * P.fa, 'BULBEE': x.bul * P.bul, 'REPRISES': x.rep * P.rep,
-      'OBJ. FACTU.': x.obj, 'PRIME FACTU.': x.pf, 'ANIMATION': x.anim, 'TOTAL': Math.round(x.tot), 'COMMENTAIRE': x.com}) : 0);
+      'OBJ. FACTU.': x.obj, 'PRIME FACTU.': x.pf, 'ANIMATION': x.anim, 'TOTAL': Math.round(x.tot), 'COMMENTAIRE': x.com}) : 0); }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), ('REM ' + (ent || 'PARC')).slice(0, 31));
   });
   XLSX.writeFile(wb, `Remuneration VO ${siteObj(site).label.replace(/[\\/:*?"<>|]/g, '-')} ${S.year}.xlsx`);
