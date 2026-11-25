@@ -150,6 +150,7 @@ body.narrow .pgrid{grid-template-columns:1fr}
 .pcard:hover{background:#f6f9ff;border-color:#c9d6ee}.pcard b{color:var(--muted);font-weight:600}
 .mx.pay td,.mx.pay th{white-space:nowrap;padding-left:6px;padding-right:6px}.mx.pay tr.open td{background:#f6f9ff}
 .mx.pay tr.pdet>td{padding:6px 10px 14px 24px;background:#fbfcfe}.mx.pay tr.pdet .mx td,.mx.pay tr.pdet .mx th{font-size:12.5px;padding-top:6px;padding-bottom:6px}
+.og2 input{width:44px;text-align:center}
 .ppg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.ppg textarea{width:100%;resize:vertical;text-transform:none!important;letter-spacing:normal!important;font:inherit!important;font-size:14px!important;font-weight:400!important;color:var(--ink)!important}.ppg .ppin{display:flex;align-items:center;gap:8px}.ppg .ppin input{flex:1;min-width:0}.ppg .ppin span{color:var(--muted);font-size:13px;white-space:nowrap;width:44px;flex:none}
 #cf .miss{border-color:#d0453a!important;background:#fff5f4}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
@@ -1134,7 +1135,11 @@ function payView(site) {
     ${f('t1', 'Tranche IP 1 jusqu\'à', '%')}${f('t2', 'Tranche IP 2 jusqu\'à', '%')}${f('fiA', 'Taux FI < contrat (3 tranches)', '%')}${f('fiB', 'Taux FI > contrat (3 tranches)', '%')}
     ${f('fa', 'Frais admin (MAD)', '€ / VO')}${f('bul', 'Bulbee', '€ / VO')}${f('rep', 'Reprise VOP', '€ / VO')}${f('f0', 'Obj. factu. atteint', '€ / VO')}${f('f1', 'Obj. factu. +1', '€ / VO')}${f('f2', 'Obj. factu. +2 et plus', '€ / VO')}</div>
     <div class="ppg" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="f"><label>Animation</label><textarea class="ppt" data-k="anim" rows="3" ${ed ? '' : 'disabled'} placeholder="Ex. challenge du mois, prime spéciale…">${esc(P.anim || '')}</textarea></div><div class="f"><label>Commentaires</label><textarea class="ppt" data-k="comm" rows="3" ${ed ? '' : 'disabled'}>${esc(P.comm || '')}</textarea></div></div>
-    ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème</button>` : ''}</div></details>`;
+    ${ed ? `<button class="btn" style="margin-top:12px" onclick="savePP('${site}')">Enregistrer le barème</button>` : ''}
+    <h4 class="eyebrow" style="margin:22px 0 8px">Objectifs de facturation par vendeur · ${S.year} (nombre de VO facturés)</h4>
+    <div style="overflow:auto"><table class="mx og2"><tr><th class="lab">Vendeur</th>${MOIS_C.map(x => `<th>${x}</th>`).join('')}<th class="tt">ANNÉE</th></tr>
+    ${L.map(x => { let t = 0; return `<tr><td class="lab">${esc(x.v)}</td>${[...Array(12)].map((_, i) => { const v = (((S.obj[site + '|' + S.year + '|' + (i + 1)] || {}).vend || {})[ent || '*'] || {})[x.v]; t += N(v); return `<td><input class="yobj" data-v="${esc(x.v)}" data-m="${i + 1}" value="${v == null ? '' : v}" ${ed ? '' : 'disabled'}></td>`; }).join('')}<td class="tt">${t || '-'}</td></tr>`; }).join('')}</table></div>
+    ${ed ? `<button class="btn" style="margin-top:12px" onclick="saveYObj('${site}')">Enregistrer les objectifs de facturation</button>` : ''}</div></details>`;
   return `<div class="card"><div class="chead"><div><h3>Rémunération variable · ${esc(siteObj(site).label)}${ent ? ' · ' + esc(ent) : ''}</h3><div class="sub">${MOIS[m - 1]} ${S.year} · VO facturés dans le mois · cliquer sur un vendeur pour le détail</div></div>
     <div class="tools">${entSeg}${ed ? `<button class="btn" onclick="savePObj('${site}')">Enregistrer objectifs, animation et commentaires</button>` : ''}<button class="btn ghost" onclick="exportPay('${site}')">Exporter en Excel</button></div></div>
     <div style="overflow:auto">${t}</div>
@@ -1152,6 +1157,18 @@ async function savePObj(site) {
   const { error } = await S.sb.from('tc_objectifs').upsert({site, annee: S.year, mois: m, vend});
   if (error) { flash('Erreur : ' + error.message); return; }
   S.obj[key] = Object.assign({}, o, {vend}); flash('Enregistré'); renderMain();
+}
+async function saveYObj(site) {
+  const ent = S.payEnt || '*', rows = [];
+  for (let m = 1; m <= 12; m++) {
+    const key = site + '|' + S.year + '|' + m, o = S.obj[key] || {}, vend = Object.assign({}, o.vend || {}), cur = Object.assign({}, vend[ent] || {});
+    document.querySelectorAll(`.yobj[data-m="${m}"]`).forEach(i => { const v = i.value.trim(); if (v === '') delete cur[i.dataset.v]; else cur[i.dataset.v] = Number(v.replace(',', '.')) || 0; });
+    vend[ent] = cur; rows.push({site, annee: S.year, mois: m, vend});
+  }
+  const { error } = await S.sb.from('tc_objectifs').upsert(rows);
+  if (error) { flash('Erreur : ' + error.message); return; }
+  rows.forEach(r => { const k = site + '|' + S.year + '|' + r.mois; S.obj[k] = Object.assign({site, annee: S.year, mois: r.mois}, S.obj[k], {vend: r.vend}); });
+  flash('Objectifs de facturation enregistrés'); renderMain();
 }
 async function savePP(site) {
   const PP = JSON.parse(JSON.stringify(ppOf(site))), ent = S.payEnt, P = Object.assign({}, PP_MBVO, PP[ent]);
