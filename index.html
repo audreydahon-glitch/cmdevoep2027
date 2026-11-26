@@ -274,13 +274,19 @@ table.mx{border-collapse:separate;border-spacing:0;width:100%}
 .lg td{white-space:normal;vertical-align:top;text-align:left}
 .ad{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
 .chk{display:flex;flex-wrap:wrap;gap:6px 14px}
-.pp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
-.ppg{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fbfcfd}
-.ppt{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.ppt .lnk{font-size:11px;letter-spacing:0;text-transform:none}
-label.ppi,.pbox label.ppi,.f label.ppi{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:5px 4px;border-radius:6px;font-size:13px;color:var(--ink2);cursor:pointer}
-label.ppi:hover{background:var(--accent-soft)}
-label.ppi input{width:16px!important;height:16px;min-height:0!important;padding:0!important;margin:0;flex:none}
+.pk{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.pkg{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:10px 12px;background:#fff}
+.pkh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pkh b{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);font-weight:800}
+.pka{background:none;border:0;color:var(--accent);font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 4px}
+.pkl{display:flex;flex-wrap:wrap;gap:8px}
+.pbox label.pkc,label.pkc{display:inline-flex!important;margin:0!important;cursor:pointer}
+label.pkc input{position:absolute;opacity:0;width:0;height:0}
+label.pkc span{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--line);border-radius:999px;font-size:13.5px;font-weight:600;color:var(--ink2);background:#f6f8fb;white-space:nowrap;transition:all .12s}
+label.pkc span::before{content:'';width:14px;height:14px;border-radius:4px;border:1.5px solid #b8c1cf;background:#fff;flex:none}
+label.pkc input:checked+span{background:var(--c);border-color:var(--c);color:#fff}
+label.pkc input:checked+span::before{border-color:#fff;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' stroke='%230e1a2b' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/12px no-repeat}
+label.pkc input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .chk label{display:flex;gap:6px;align-items:center;font-size:12.5px;white-space:nowrap}
 .creds{margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fbfcfd}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
@@ -1295,7 +1301,7 @@ async function api(body) {
 }
 async function createAcc(e) {
   e.preventDefault();
-  const f = e.target, sites = [...f.querySelectorAll('.pp input:checked')].map(i => i.value).join(',');
+  const f = e.target, sites = [...f.querySelectorAll('.pk input:checked')].map(i => i.value).join(',');
   $('#nm').textContent = 'Création…';
   try {
     const r = await api({action: 'create', nom: f.nom.value, role: f.role.value, sites});
@@ -1320,7 +1326,9 @@ async function delAcc(id) {
 // Liste des parcs à cocher, regroupés par concession
 function parcPicker(cur) {
   const groups = [...new Set(S.sites.map(x => x.grp))];
-  return `<div class="pp">${groups.map(g => `<div class="ppg"><div class="ppt">${esc(g)}<button type="button" class="lnk" onclick="const b=this.closest('.ppg').querySelectorAll('input');const all=[...b].every(i=>i.checked);b.forEach(i=>i.checked=!all)">tout</button></div>${S.sites.filter(x => x.grp === g).map(x => `<label class="ppi"><input type="checkbox" value="${x.slug}" ${cur.includes(x.slug) ? 'checked' : ''}><span>${esc(x.label)}</span></label>`).join('')}</div>`).join('')}</div>`;
+  // Sélecteur de parcs : une ligne par concession, parcs en pastilles à cocher, bouton Tout / Aucun
+  const col = g => GRP_COL[g] || '#8792a6';
+  return `<div class="pk">${groups.map(g => { const L = S.sites.filter(x => x.grp === g); return `<div class="pkg" style="--c:${col(g)}"><div class="pkh"><b>${esc(g)}</b><button type="button" class="pka" onclick="const b=this.closest('.pkg').querySelectorAll('input');const all=[...b].every(i=>i.checked);b.forEach(i=>i.checked=!all)">Tout / aucun</button></div><div class="pkl">${L.map(x => `<label class="pkc"><input type="checkbox" value="${x.slug}" ${cur.includes(x.slug) ? 'checked' : ''}><span>${esc(x.label)}</span></label>`).join('')}</div></div>`; }).join('')}</div>`;
 }
 function editAcc(id) {
   const c = S.comptes.find(x => x.id === id);
@@ -1334,7 +1342,7 @@ function editAcc(id) {
   document.body.appendChild(d);
   $('#ef').onsubmit = async e => {
     e.preventDefault();
-    const role = e.target.role.value, sites = [...e.target.querySelectorAll('.pp input:checked')].map(i => i.value).join(',');
+    const role = e.target.role.value, sites = [...e.target.querySelectorAll('.pk input:checked')].map(i => i.value).join(',');
     const { error } = await S.sb.from('tc_acces').upsert({user_id: id, role, sites, updated_at: new Date().toISOString()});
     if (error) { alert(error.message); return; }
     d.remove(); flash('Accès mis à jour'); adminView();
