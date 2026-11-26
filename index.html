@@ -349,7 +349,22 @@ const COLS = [
 const XL_ORDER = ['date_cde','marque','modele','immat','client','vendeur','cession','repreneur','prix_vente_ht','jours_stock','marge_prev','marge_vendeur','marge_reelle','remise_ttc','frais_admin','eurodatacar','pack_liv','coyote','protech','bulbbee','annulation','date_fact','garantie','fi','ca_fin','assurance','organisme','loa','reprise','commentaires'];
 const LCOL = {jaune: '#fff3b0', vert: '#d6f2dc', bleu: '#d8e6fb', rouge: '#fbd9d5', orange: '#fde2c4', violet: '#e8ddf7'};   // couleurs de ligne (surlignage)
 const HIDE_GRID = ['repreneur', 'assurance', 'depot', 'pack_liv', 'commentaires'];   // colonnes conservées en base mais retirées de l'affichage
-const GCOLS = site => COLS.filter(c => !HIDE_GRID.includes(c[0]) && !(site && c[0] === 'entite' && !entList(site).length));   // pas de colonne Entité sur les parcs mono-entité
+// Colonnes masquées par l'utilisateur (mémorisées dans son navigateur) — l'export Excel garde toutes les colonnes
+const userHide = () => { try { return JSON.parse(localStorage.getItem('tc_hide_cols') || '[]'); } catch (e) { return []; } };
+const OBSOLETE = ['repreneur', 'assurance', 'pack_liv'];   // champs qui ne sont plus saisis
+const ECOLS = site => COLS.filter(c => !OBSOLETE.includes(c[0]) && !(site && c[0] === 'entite' && !entList(site).length));   // export : toutes les colonnes utiles
+const GCOLS = site => ECOLS(site).filter(c => !HIDE_GRID.includes(c[0]) && !userHide().includes(c[0]));
+function colsModal(site) {
+  const h = userHide(), L = COLS.filter(c => !HIDE_GRID.includes(c[0]) && c[0] !== 'date_cde' && !(c[0] === 'entite' && !entList(site).length));
+  const d = document.createElement('div'); d.className = 'modal';
+  d.innerHTML = `<div class="pbox" style="max-width:680px"><h3>Colonnes affichées</h3><div class="note" style="margin-bottom:12px">Décochez les colonnes à masquer dans le tableau. Elles restent dans l'export Excel. Réglage mémorisé sur cet ordinateur.</div>
+    <div class="pk"><div class="pkg" style="--c:#3a63ad"><div class="pkh"><b>Colonnes</b><button type="button" class="pka" onclick="this.closest('.pkg').querySelectorAll('input').forEach(i=>i.checked=true)">Tout afficher</button></div><div class="pkl">${L.map(([k, l]) => `<label class="pkc"><input type="checkbox" value="${k}" ${h.includes(k) ? '' : 'checked'}><span>${esc(l)}</span></label>`).join('')}</div></div></div>
+    <div class="row2" style="margin-top:14px"><button class="btn" id="cok">Appliquer</button><button class="btn ghost" id="cko">Annuler</button></div></div>`;
+  document.body.appendChild(d);
+  d.querySelector('#cko').onclick = () => d.remove();
+  d.querySelector('#cok').onclick = () => { const hid = [...d.querySelectorAll('input')].filter(i => !i.checked).map(i => i.value);
+    try { localStorage.setItem('tc_hide_cols', JSON.stringify(hid)); } catch (e) {} d.remove(); renderMain(); };
+}   // pas de colonne Entité sur les parcs mono-entité
 const COLW = {date_cde:50,entite:50,marque:70,modele:60,immat:60,client:64,vendeur:64,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:36,marge_prev:50,marge_vendeur:52,marge_reelle:52,remise_ttc:40,frais_admin:40,eurodatacar:44,pack_liv:28,coyote:46,protech:50,bulbbee:48,annulation:46,date_fact:54,garantie:54,fi:42,ca_fin:52,assurance:46,organisme:58,loa:26,reprise:46,commentaires:32,ass_pf:36,ass_deces:38,ass_extgar:32,lld:26};
 // Ventes hors volume (comme dans le classeur) : comptées dans la marge, pas dans les commandes ni les livraisons
 const HORS_VOL = ['CESSION', 'ALCOPA', 'MARCHAND'];
@@ -928,7 +943,7 @@ function cmdView(site) {
   const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}${r.couleur ? ' hl' : ''}" style="${r.couleur ? '--rowc:' + (LCOL[r.couleur] || r.couleur) : ''}" onclick="openCmd('${r.id}')">${GC.map(c => cell(c, r)).join('')}</tr>`).join('');
   const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r ${tot(k) < 0 ? 'neg' : ''}">${nf0.format(Math.round(tot(k)))} €</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
   return `<div class="card"><div class="chead"><div><h3>Commandes VO · ${esc(siteObj(site).label)}</h3></div>
-      <div class="tools"><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
+      <div class="tools"><button class="btn ghost" onclick="colsModal('${site}')">Colonnes${userHide().length ? ` (${userHide().length} masquée${userHide().length > 1 ? 's' : ''})` : ''}</button><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
     <div class="filters"><div class="seg">${vues.map(v => `<button aria-pressed="${S.f.vue === v[0]}" onclick="S.f.vue='${v[0]}';renderMain()">${v[1]}</button>`).join('')}</div>
       <select class="sel" onchange="S.f.vend=this.value;renderMain()"><option value="">Tous les vendeurs</option>${vends.map(v => `<option ${S.f.vend === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
       <input class="inp" id="q" placeholder="Rechercher (immat, client, modèle…)" value="${esc(S.f.q)}" oninput="S.f.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{renderMain();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)">
@@ -1405,14 +1420,13 @@ async function doImport() {
 // ---------- Exports Excel ----------
 function exportCmd(site) {
   const rows = cmdFiltered(site);
-  const GC = GCOLS(site), ai = GC.findIndex(c => c[0] === 'frais_admin'), aj = GC.findIndex(c => c[0] === 'bulbbee');
+  const GC = ECOLS(site), ai = GC.findIndex(c => c[0] === 'frais_admin'), aj = GC.findIndex(c => c[0] === 'bulbbee');   // export : toutes les colonnes, même masquées
   const aoa = [GC.map(c => c[1])];
   rows.forEach(r => aoa.push(GC.map(([k, , t]) => t === 'bool' ? (r[k] ? 1 : null) : t === 'date' ? (r[k] ? new Date(r[k] + 'T00:00:00') : null) : r[k])));
   const ws = XLSX.utils.aoa_to_sheet(aoa, {cellDates: true});
-  ws['!cols'] = GC.map(c => ({wpx: COLW[c[0]] + 10}));
-  
+  ws['!cols'] = GC.map(c => ({wpx: (COLW[c[0]] || (c[0] === 'commentaires' ? 200 : 60)) + 10}));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'VO');
-  XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label} ${S.year}.xlsx`);
+  XLSX.writeFile(wb, `Commandes VO ${siteObj(site).label.replace(/[\\/:*?"<>|]/g, '-')} ${S.year}.xlsx`);
 }
 // Export d'un total (concession ou Plaque EP) : synthèse, tableaux mensuels par parc et toutes les commandes
 function exportTotal() {
