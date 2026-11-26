@@ -64,7 +64,7 @@ body.narrow .wrap{width:auto;padding:12px}
 .ptitle{display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 12px}
 .ptitle h2{font-family:var(--f-d);font-weight:800;font-size:24px;margin:0;font-stretch:90%}
 .ptitle .sub{color:var(--muted);font-size:13px}
-.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:16px}
+.tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:16px}
 body.narrow .tiles{grid-template-columns:repeat(2,1fr)}
 .tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden;min-height:132px}
 .tile .l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
@@ -91,7 +91,7 @@ body.narrow .accs{grid-template-columns:repeat(2,1fr)}
 .acc2 .bar2{height:5px;border-radius:99px;background:var(--line2);margin-top:6px;overflow:hidden}
 .acc2 .bar2 i{display:block;height:100%;background:var(--c);border-radius:99px}
 .acc2 .s{font-size:12px;color:var(--muted);margin-top:5px}
-.ribbon{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}
+.ribbon{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:18px}
 body.narrow .ribbon{grid-template-columns:repeat(2,1fr)}
 .rb{border-top:2px solid var(--ink2);padding:10px 2px 2px;font-size:15px;color:var(--ink2)}
 .rb b{font-family:var(--f-d);font-size:24px;font-weight:800;margin-right:6px;color:var(--ink);font-stretch:92%}
@@ -150,9 +150,13 @@ body.narrow .pgrid{grid-template-columns:1fr}
 .pcard:hover{background:#f6f9ff;border-color:#c9d6ee}.pcard b{color:var(--muted);font-weight:600}
 .mx.pay td,.mx.pay th{white-space:nowrap;padding-left:6px;padding-right:6px}.mx.pay tr.open td{background:#f6f9ff}
 .mx.pay tr.pdet>td{padding:6px 10px 14px 24px;background:#fbfcfe}.mx.pay tr.pdet .mx td,.mx.pay tr.pdet .mx th{font-size:12.5px;padding-top:6px;padding-bottom:6px}
+.em2{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.em2 input{width:100%;text-transform:none}
 .og2 input{width:44px;text-align:center}
 .ppg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.ppg textarea{width:100%;resize:vertical;text-transform:none!important;letter-spacing:normal!important;font:inherit!important;font-size:14px!important;font-weight:400!important;color:var(--ink)!important}.ppg .ppin{display:flex;align-items:center;gap:8px}.ppg .ppin input{flex:1;min-width:0}.ppg .ppin span{color:var(--muted);font-size:13px;white-space:nowrap;width:44px;flex:none}
 #cf .miss{border-color:#d0453a!important;background:#fff5f4}
+table.xl tr.hl td{background:var(--rowc)!important}
+.lcol{display:flex;gap:8px}.lcol input{display:none}.lcol span{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);cursor:pointer;color:var(--muted);font-size:13px}.lcol input:checked+span{outline:3px solid var(--ink);outline-offset:1px}
+.psel{display:flex;align-items:center;gap:10px}.psel span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}.psel select{min-width:300px;font-size:15px;font-weight:600;padding:9px 12px}
 .chp{display:inline-block;min-width:46px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:#eef1f5;color:var(--muted)}
 .chp.ok{background:#e3f4ea;color:#1e7a45}.chp.ko{background:#fde8e5;color:#b8352a}
 
@@ -337,6 +341,7 @@ const COLS = [
 ];
 // Ordre des colonnes du classeur Excel (A → AD), utilisé pour l'import
 const XL_ORDER = ['date_cde','marque','modele','immat','client','vendeur','cession','repreneur','prix_vente_ht','jours_stock','marge_prev','marge_vendeur','marge_reelle','remise_ttc','frais_admin','eurodatacar','pack_liv','coyote','protech','bulbbee','annulation','date_fact','garantie','fi','ca_fin','assurance','organisme','loa','reprise','commentaires'];
+const LCOL = {jaune: '#fff3b0', vert: '#d6f2dc', bleu: '#d8e6fb', rouge: '#fbd9d5', orange: '#fde2c4', violet: '#e8ddf7'};   // couleurs de ligne (surlignage)
 const HIDE_GRID = ['repreneur', 'assurance', 'depot', 'pack_liv', 'commentaires'];   // colonnes conservées en base mais retirées de l'affichage
 const GCOLS = site => COLS.filter(c => !HIDE_GRID.includes(c[0]) && !(site && c[0] === 'entite' && !entList(site).length));   // pas de colonne Entité sur les parcs mono-entité
 const COLW = {date_cde:50,entite:50,marque:70,modele:60,immat:60,client:64,vendeur:64,cession:46,repreneur:70,prix_vente_ht:56,jours_stock:36,marge_prev:50,marge_vendeur:52,marge_reelle:52,remise_ttc:40,frais_admin:40,eurodatacar:44,pack_liv:28,coyote:46,protech:50,bulbbee:48,annulation:46,date_fact:54,garantie:54,fi:42,ca_fin:52,assurance:46,organisme:58,loa:26,reprise:46,commentaires:32,ass_pf:36,ass_deces:38,ass_extgar:32,lld:26};
@@ -514,14 +519,15 @@ function render() {
   const me = S.me;
   const groups = [...new Set(S.sites.map(s => s.grp))].map(g => ({g, sites: S.sites.filter(s => s.grp === g)})).filter(x => x.sites.length);
   const pressed = c => c ? 'aria-pressed="true"' : 'aria-pressed="false"';
-  let chips = '';
-  groups.forEach((x, i) => {
-    if (i) chips += '<span class="sep"></span>';
-    chips += `<span class="grp">${esc(x.g)}</span>`;
-    x.sites.forEach(s => chips += `<button class="chip" ${pressed(S.sel.t === 'site' && S.sel.s === s.slug)} onclick="pick('site','${s.slug}')">${esc(s.label)}</button>`);
-    if (x.sites.length > 1) chips += `<button class="chip tot" ${pressed(S.sel.t === 'grp' && S.sel.g === x.g)} onclick="pick('grp','${x.g}')">Total ${esc(x.g)}</button>`;
+  // Choix du parc : un menu déroulant (groupé par concession) au lieu des boutons
+  const cur = S.sel.t === 'site' ? 'site:' + S.sel.s : S.sel.t === 'grp' ? 'grp:' + S.sel.g : 'all';
+  const opt = (v, l) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
+  let chips = `<label class="psel"><span>Parc</span><select class="sel" id="parc" onchange="const v=this.value; v==='all' ? pick('all') : pick(v.split(':')[0], v.slice(v.indexOf(':') + 1))">`;
+  if (groups.length > 1) chips += opt('all', me.role === 'admin' ? '◆ Plaque EP' : '◆ Total mes parcs');
+  groups.forEach(x => {
+    chips += `<optgroup label="${esc(x.g)}">${x.sites.map(s => opt('site:' + s.slug, s.label)).join('')}${x.sites.length > 1 ? opt('grp:' + x.g, '◆ Total ' + x.g) : ''}</optgroup>`;
   });
-  if (groups.length > 1) chips += `<span class="sep"></span><button class="chip tot" ${pressed(S.sel.t === 'all')} onclick="pick('all')">${me.role === 'admin' ? 'Plaque EP' : 'Total mes parcs'}</button>`;
+  chips += '</select></label>';
   const years = []; const y0 = new Date().getFullYear();
   for (let y = y0 + 1; y >= 2025; y--) years.push(y);
   $('#app').innerHTML = `<div class="wrap">
@@ -579,12 +585,12 @@ function renderMain() {
 // ====================================================================
 function stats(sites, year, ent) {
   const z = () => Array(13).fill(0);
-  const out = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z(),
+  const out = {cde: z(), liv: z(), fi: z(), marge: z(), ca: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z(),
     v: {}, org: {}, gar: {}, sites};
   const vl = sites.length === 1 ? vendList(sites[0]) : [];
   // Un vendeur retiré de la liste (départ en cours d'année) garde sa ligne et son historique ; « Non affecté » = commande sans vendeur
   const vk = name => { const k = (name || '').trim().toUpperCase(); return k || '__NA'; };
-  const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z()});
+  const V = k => out.v[k] || (out.v[k] = {cde: z(), liv: z(), fi: z(), marge: z(), ca: z(), caf: z(), coy: z(), pro: z(), bul: z(), am: z(), fa: z(), edc: z(), rep: z()});
   for (const r of S.rows) {
     if (!sites.includes(r.site) || r.annulation) continue;
     if (ent && (r.entite || '').toUpperCase() !== ent) continue;
@@ -596,6 +602,7 @@ function stats(sites, year, ent) {
       if (!hv) out.liv[mf]++; v.liv[mf]++;
       if (r.fi || r.loa || r.lld || N(r.ca_fin) > 0) { if (!hv) out.fi[mf]++; v.fi[mf]++; }   // dossier financé : crédit, LOA ou LLD
       out.marge[mf] += N(r.marge_reelle); v.marge[mf] += N(r.marge_reelle);
+      out.ca[mf] += N(r.prix_vente_ht); v.ca[mf] += N(r.prix_vente_ht);   // CA HT = prix de vente HT des VO facturés (tous vendeurs)
       if (!hv) out.caf[mf] += N(r.ca_fin); v.caf[mf] += N(r.ca_fin);
       const c = hv ? 0 : 1;   // les ventes hors volume ne comptent pas dans les totaux (comme le classeur)
       if (r.coyote) { out.coy[mf] += c; v.coy[mf]++; }
@@ -610,7 +617,7 @@ function stats(sites, year, ent) {
     }
   }
   const sum = a => a.slice(1).reduce((x, y) => x + y, 0);
-  for (const k of ['cde','liv','fi','marge','caf','coy','pro','bul','am','fa','edc','rep']) out[k][0] = sum(out[k]);
+  for (const k of ['cde','liv','fi','marge','ca','caf','coy','pro','bul','am','fa','edc','rep']) out[k][0] = sum(out[k]);
   Object.values(out.v).forEach(v => Object.keys(v).forEach(k => v[k][0] = sum(v[k])));
   Object.values(out.org).forEach(a => a[0] = sum(a)); Object.values(out.gar).forEach(a => a[0] = sum(a));
   // Objectifs
@@ -643,6 +650,7 @@ function tilesHtml(st, protech) {
   const T = [
     ['dark', 'Commandes', fN(st.cde[m]), objTxt(st.cde[m], st.oc[m], fN), bar(pct(st.cde[m], st.oc[m]))],
     ['', 'VO livrés', fN(st.liv[m]), objTxt(st.liv[m], st.ol[m], fN), bar(pct(st.liv[m], st.ol[m]))],
+    ['ac" style="--c:#0f766e', 'CA HT', fE(st.ca[m]), `prix de vente HT · ${nf0.format(st.liv[m])} VO`, ''],
     ['ac" style="--c:#5b3fb0', 'CA FI HT', fE(st.caf[m]), st.ocaf[m] ? `objectif du mois ${fE(st.ocaf[m])}` : 'objectif du mois non saisi', st.ocaf[m] ? bar(pct(st.caf[m], st.ocaf[m])) : ''],
     ['ac" style="--c:#2e7d4f', 'IP FI', fP(tf), oip ? `objectif du mois ${fP(oip)}` : 'objectif du mois non saisi', oip && tf != null ? bar(tf / oip) : ''],
     ['ac" style="--c:#c0392b', 'Marge réelle HT', fE(st.marge[m]), objTxt(st.marge[m], st.om[m], fE), bar(pct(st.marge[m], st.om[m]))],
@@ -657,6 +665,7 @@ function tilesHtml(st, protech) {
   const R = [
     k3('Commandes', c('cde'), c('oc'), fN, '#7fa6d6'),
     k3('VO livrés', c('liv'), c('ol'), fN, '#9fb8d8'),
+    ['CA HT', fE(c('ca')), 'prix de vente HT', null, '#0f766e'],
     k3('Marge réelle HT', c('marge'), c('om'), fE, '#e07a6e'),
     k3('CA FI HT', c('caf'), c('ocaf'), fE, '#a48be0'),
     ['IP FI', fP(ipC), oipc ? `objectif ${fP(oipc)}` : 'objectif non saisi', oipc && ipC != null ? ipC / oipc : null, '#6cc292'],
@@ -669,7 +678,7 @@ function tilesHtml(st, protech) {
   const A = [['Frais admin', st.fa[m], '#7aa95c'], ['Eurodatacar', st.edc[m], '#4f9a8a'], ['Coyote', st.coy[m], '#ED7D31'],
     ['Bulbee', st.bul[m], '#d99a14'], ...(protech ? [['Protech', st.pro[m], '#7a5c99']] : []), ['Reprises', st.rep[m], '#4472C4'], ['Ventes AM', st.am[m], '#8a6bc9']];
   const accRow = `<div class="accs" style="grid-template-columns:repeat(${A.length},1fr)">${A.map(([l, n, c]) => { const p = liv ? n / liv : null; return `<div class="acc2" style="--c:${c}"><div class="l">${l}</div><div class="row"><span class="n">${nf0.format(n)}</span><span class="p">${fP(p)}</span></div><div class="bar2"><i style="width:${p == null ? 0 : Math.min(100, Math.round(p * 100))}%"></i></div></div>`; }).join('')}</div>`;
-  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="${String(t[2]).length > 9 ? 'font-size:30px;' : ''}${/^-\d|^−/.test(String(t[2]).replace(/\s/g, '')) ? 'color:#d0453a' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
+  return `<div class="tiles">${T.map(t => `<div class="tile ${t[0]}"><div class="l">${t[1]}</div><div class="v" style="white-space:nowrap;${String(t[2]).length > 11 ? 'font-size:24px;' : String(t[2]).length > 8 ? 'font-size:28px;' : ''}${/^-\d|^−/.test(String(t[2]).replace(/\s/g, '')) ? 'color:#d0453a' : ''}">${t[2]}</div><div class="s">${t[3]}</div>${t[4]}</div>`).join('')}</div>${accRow}
     ${cumul}`;
 }
 
@@ -678,7 +687,7 @@ function recapSite(site) {
   const ents = entList(site);
   if (!ents.includes(S.ent)) S.ent = null;
   const st = stats([site], S.year, S.ent);
-  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
+  const secs = [['cde','Commandes'],['liv','Livraisons & FI'],['ca','CA HT'],['marge','Marge'],['fin','Financement'],['gar','Garanties'],['acc','Accessoires'],['am','Ventes AM']];
   const sansEnt = S.ent ? S.rows.filter(r => r.site === site && !r.annulation && !r.entite && (ym(r.date_cde)[0] === S.year || ym(r.date_fact)[0] === S.year)).length : 0;
   const entBar = ents.length > 1 ? `<div class="seg" style="margin-bottom:12px">${[null, ...ents].map(e => `<button aria-pressed="${S.ent === e}" onclick="S.ent=${e ? `'${e}'` : 'null'};renderMain()">${e ? esc(e) : 'Global site'}</button>`).join('')}</div>${S.ent && sansEnt ? `<span class="note" style="margin-left:12px">${sansEnt} commande(s) sans entité ne sont pas comptées dans cette vue</span>` : ''}` : '';
   const head = `<div class="ptitle"><h2>${esc(siteObj(site).label)}${S.ent ? ' · ' + esc(S.ent) : ''} · ${S.year}</h2><span class="sub">Mois de ${MOIS[S.month - 1].toLowerCase()} ${S.year} · bandeau du bas : cumul janvier → ${MOIS[S.month - 1].toLowerCase()}${S.ent ? ' · objectifs : vue Global' : ''}</span></div>` + entBar;
@@ -725,6 +734,10 @@ function vlab(k) { return k === '__NA' ? 'Non affecté' : esc(k) + (VX.has(k) ? 
 function recapTable(st, sec) {
   const V = vendRows(st), g = (k, f, only) => V.filter(v => only == null || isHV(v) === only).map(v => mrow(vlab(v) + (only === true ? ' <span class="note">· hors total</span>' : ''), (st.v[v] || {})[k] || Array(13).fill(0), f, v === '__NA' ? 'na' : only === true ? 'obj' : '')).join('');
   if (sec === 'cde') return `<table class="mx">${hdr('Commandes (date cde)')}${g('cde', fN, false)}${mrow('Total', st.cde, fN, 'sub')}${objRows(st.cde, st.oc, fN)}</table>`;
+  if (sec === 'ca') {
+    const moy = st.ca.map((v, i) => st.liv[i] ? v / st.liv[i] : 0);
+    return `<table class="mx">${hdr('CA HT · prix de vente HT (date facture)', 'CUMUL')}${g('ca', fE)}${mrow('Total parc', st.ca, fE, 'sub')}${mrow('Prix de vente moyen / VO', moy, fE, 'ec')}</table>`;
+  }
   if (sec === 'marge') {
     const moy = st.marge.map((v, i) => st.liv[i] ? v / st.liv[i] : 0);
     return `<table class="mx">${hdr('Marge réelle HT (date facture)', 'CUMUL')}${g('marge', fE)}${mrow('Total', st.marge, fE, 'sub')}${objRows(st.marge, st.om, fE)}${mrow('Marge moy. / VO livré', moy, fE, 'ec')}</table>`;
@@ -787,7 +800,7 @@ function accCharts(per) {
 // Graphiques des totaux : classement des parcs + évolution mensuelle, sur le mois ou le cumul janvier → mois
 function itemCharts(K, per, st, f, title) {
   const m = S.month, cum = S.accPer !== 'mois', mo = MOIS[m - 1].toLowerCase();
-  const COL = {cde: '#3a63ad', liv: '#2b8cb0', marge: '#c0392b', caf: '#5b3fb0', tfi: '#2e7d4f', am: '#8a6bc9'}[K];
+  const COL = {cde: '#3a63ad', liv: '#2b8cb0', ca: '#0f766e', marge: '#c0392b', caf: '#5b3fb0', tfi: '#2e7d4f', am: '#8a6bc9'}[K];
   const OK = {cde: 'oc', liv: 'ol', marge: 'om', caf: 'ocaf', tfi: 'oip'}[K];
   const sum = a => cum ? a.slice(1, m + 1).reduce((x, y) => x + y, 0) : a[m];
   const avgO = a => { if (!cum) return a[m] || 0; const v = a.slice(1, m + 1).filter(Boolean); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : 0; };
@@ -850,10 +863,10 @@ function recapTotal() {
   const sites = selSites();
   const st = stats(sites, S.year);
   const per = sites.map(s => [s, stats([s], S.year)]);
-  const secs = [['cde','Commandes'],['liv','Livraisons'],['marge','Marge'],['caf','CA FI HT'],['tfi','IP FI'],['acc','Accessoires'],['am','Ventes AM']];
+  const secs = [['cde','Commandes'],['liv','Livraisons'],['ca','CA HT'],['marge','Marge'],['caf','CA FI HT'],['tfi','IP FI'],['acc','Accessoires'],['am','Ventes AM']];
   const K = S.totSec && S.totSec !== 'syn' ? S.totSec : 'cde';
   const val = (x, m) => K === 'tfi' ? (x.liv[m] ? x.fi[m] / x.liv[m] : null) : (x[K] || [])[m];
-  const f = K === 'marge' || K === 'caf' ? fE : K === 'tfi' ? fP : fN;
+  const f = K === 'marge' || K === 'caf' || K === 'ca' ? fE : K === 'tfi' ? fP : fN;
   const t = K === 'acc' ? '' : itemCharts(K, per, st, f, (secs.find(s => s[0] === K) || secs[0])[1]);
   const mo = MOIS[S.month - 1].toLowerCase();
   const tAcc = K === 'acc' ? `<div class="pz">${pzHead('Accessoires', '', '#d9661c', [])}<div class="seg" style="margin:14px 20px 0">${[['mois', 'Mois de ' + mo], ['cum', 'Cumul janvier → ' + mo]].map(([k, l]) => `<button aria-pressed="${(S.accPer === 'mois') === (k === 'mois')}" onclick="S.accPer='${k}';renderMain()">${l}</button>`).join('')}</div>${accCharts(per)}</div>` : '';
@@ -906,7 +919,7 @@ function cmdView(site) {
   g += '</tr>';
   const h = `<tr class="h">${GC.map(c => `<th style="background:${c[3]};color:${c[4] || '#000'}">${c[1]}</th>`).join('')}</tr>`;
   const cg = `<colgroup>${GC.map(c => `<col style="width:${COLW[c[0]]}px">`).join('')}</colgroup>`;
-  const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}" onclick="openCmd('${r.id}')">${GC.map(c => cell(c, r)).join('')}</tr>`).join('');
+  const body = rows.slice(0, 1500).map(r => `<tr class="${r.annulation ? 'annul' : ''}${r.couleur ? ' hl' : ''}" style="${r.couleur ? '--rowc:' + (LCOL[r.couleur] || r.couleur) : ''}" onclick="openCmd('${r.id}')">${GC.map(c => cell(c, r)).join('')}</tr>`).join('');
   const foot = `<tr>${GC.map(c => { const [k, , t] = c; if (k === 'date_cde') return `<td>${rows.filter(r => !r.annulation).length}</td>`; if (t === 'eur') return `<td class="r ${tot(k) < 0 ? 'neg' : ''}">${nf0.format(Math.round(tot(k)))} €</td>`; if (t === 'bool' && k !== 'annulation') return `<td>${cnt(k) || ''}</td>`; return '<td></td>'; }).join('')}</tr>`;
   return `<div class="card"><div class="chead"><div><h3>Commandes VO · ${esc(siteObj(site).label)}</h3></div>
       <div class="tools"><button class="btn ghost" onclick="exportCmd('${site}')">Exporter en Excel</button>${edit ? `<button class="btn" onclick="openCmd(null)">+ Nouvelle commande</button>` : ''}</div></div>
@@ -947,8 +960,8 @@ function openCmd(id) {
     ${sec('Prix & marge', '#FFE699', `<div class="fg">${inp('prix_vente_ht', 'Prix de vente HT (€) ¹', 'number')}${inp('jours_stock', 'Nbre jour stock *')}${inp('remise_ttc', 'Remise TTC (€)', 'number')}${inp('marge_prev', 'Marge HT prévisionnelle (€) *', 'number')}${inp('marge_vendeur', 'Marge HT vendeur (€) ¹', 'number')}${MARGE_PLUS[r.site] != null ? `<div class="f"><label id="mrl">Marge réelle HT (€)</label><input name="marge_reelle" type="number" step="any" value="${esc(r.marge_reelle == null ? '' : r.marge_reelle)}" ${ro ? 'disabled' : ''}></div>` : inp('marge_reelle', 'Marge réelle HT (€)', 'number')}</div>`)}
     ${sec('Accessoires', '#ED7D31', `<div class="toggles">${tg('frais_admin', 'Frais admin')}${tg('eurodatacar', 'Eurodatacar')}${tg('coyote', 'Coyote')}${tg('protech', 'Protech')}${tg('bulbbee', 'Bulbee')}</div>`)}
     ${sec('Financement', '#8EA9DB', `<div class="fs" style="margin-top:0"><h4>Type de financement</h4><div class="toggles">${tg('fi', 'Crédit')}${tg('loa', 'LOA')}${tg('lld', 'LLD')}</div></div><div class="fg" style="margin-top:10px">${inp('organisme', 'Organisme ²', 'text', '', 'dlo')}${inp('ca_fin', 'CA FI HT (€) ²', 'number')}</div><div class="fs" style="margin-top:10px"><h4>Assurances</h4><div class="toggles">${tg('ass_pf', 'Perte FI')}${tg('ass_deces', 'Décès')}${tg('ass_extgar', 'Ext. garantie')}</div></div>`)}
-    ${sec('Facturation', '#70AD47', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie', 'text', '', 'dlg')}</div>`)}
-    ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div>`)}
+    ${sec('Facturation', '#70AD47', `<div class="fg">${inp('date_fact', 'Date de facture', 'date')}${inp('garantie', 'Garantie ¹', 'text', '', 'dlg')}</div>`)}
+    ${sec('Commentaires', '#FFC000', `<div class="f"><textarea name="commentaires" ${ro ? 'disabled' : ''}>${esc(r.commentaires || '')}</textarea></div><div class="f" style="margin-top:10px"><label>Couleur de la ligne dans le tableau</label><div class="lcol">${[['', 'Aucune'], ...Object.keys(LCOL).map(k => [k, k])].map(([k, l]) => `<label title="${l}"><input type="radio" name="couleur" value="${k}" ${(r.couleur || '') === k ? 'checked' : ''} ${ro ? 'disabled' : ''}><span style="background:${k ? LCOL[k] : '#fff'}">${k ? '' : '✕'}</span></label>`).join('')}</div></div>`)}
     ${dl('dlv', p.vendeurs)}${dl('dlo', p.organismes)}${dl('dlg', p.garanties)}${dl('dlm', ['MERCEDES', 'FORD', 'NISSAN', 'AUDI', 'VOLKSWAGEN', 'AM'])}
     ${id ? `<div class="meta">Créée le ${new Date(r.created_at).toLocaleString('fr-FR')} par ${esc(S.names[r.created_by] || '—')}<br>Modifiée le ${new Date(r.updated_at).toLocaleString('fr-FR')} par ${esc(S.names[r.updated_by] || '—')}</div>` : ''}
     </div><div class="dfoot">${ro ? '<span class="note">Lecture seule</span>' : `<button class="btn" type="submit">Enregistrer</button>${tg('annulation', 'Commande annulée', true)}`}${id && canDel(r.site) ? `<button type="button" class="btn danger" onclick="delCmd('${id}')">Supprimer</button>` : ''}<span class="grow"></span><span class="dmsg" id="dm"></span>${ro ? '' : '<span class="note" style="margin-left:10px;white-space:nowrap">* obligatoire · ¹ si facturée · ² si financée</span>'}</div></form></div>`;
@@ -995,13 +1008,14 @@ async function saveCmd(id, site) {
   });
   if (o.depot === '?') { $('#dm').textContent = 'Dépôt : choisissez Client ou CA Auto Bank.'; return; }
   // Champs obligatoires (sauf commande annulée) : * toujours · ¹ si facturée · ² si financée
+  o.couleur = (f.querySelector('input[name=couleur]:checked') || {}).value || null;
   if (!o.annulation) {
     const miss = [], need = (k, lab) => { if (o[k] == null || o[k] === '') miss.push([k, lab]); };
     if (f.elements.entite_sel) need('entite', 'Entité');
     need('marque', 'Marque'); need('modele', 'Modèle'); need('immat', 'Immat'); need('client', 'Client'); need('vendeur', 'Vendeur');
     if (!o.cession) need('jours_stock', 'Jours de stock');   // pas obligatoire pour une cession need('marge_prev', 'Marge HT prévisionnelle');
     if (o.fi || o.loa || o.lld) { need('organisme', 'Organisme'); need('ca_fin', 'CA FI HT'); }
-    if (o.date_fact) { need('prix_vente_ht', 'Prix de vente HT'); need('marge_vendeur', 'Marge HT vendeur'); }
+    if (o.date_fact) { need('prix_vente_ht', 'Prix de vente HT'); need('marge_vendeur', 'Marge HT vendeur'); need('garantie', 'Garantie'); }
     f.querySelectorAll('.miss').forEach(x => x.classList.remove('miss'));
     if (o.date_fact && o.date_cde && o.date_fact < o.date_cde) { f.elements.date_fact.classList.add('miss'); $('#dm').textContent = 'La date de facture ne peut pas être antérieure à la date de commande.'; return; }
     if (miss.length) {
@@ -1045,6 +1059,8 @@ function paramView(site) {
   og += '</table>';
   return `<div class="card"><div class="chead"><div><h3>Objectifs mensuels · ${esc(siteObj(site).label)}</h3><div class="sub">${ed ? 'Modifiables par les chefs des ventes, directeurs et administrateurs' : 'Lecture seule'}</div></div>${ed ? `<button class="btn" onclick="saveObj('${site}')">Enregistrer les objectifs</button>` : ''}</div><div class="pad" style="overflow:auto">${og}</div></div>
     <div class="card"><div class="pad">${(Object.keys(ppOf(site)).length ? Object.keys(ppOf(site)) : ['']).map(e => yObjGrid(site, e, vendList(site).filter(v => !PP_EXCL.includes(v)), ed)).join('')}</div></div>
+    <div class="card"><div class="chead"><div><h3>Emails des vendeurs</h3><div class="sub">Chaque vendredi à 17 h, chaque vendeur reçoit par mail ses VO facturés du mois en cours</div></div>${ed ? `<button class="btn" onclick="saveEmails('${site}')">Enregistrer les emails</button>` : ''}</div>
+      <div class="pad em2">${vendList(site).filter(v => !PP_EXCL.includes(v)).map(v => `<div class="f"><label>${esc(v)}</label><input class="vmail" type="email" data-v="${esc(v)}" value="${esc(((p.emails || {})[v]) || '')}" ${ed ? '' : 'disabled'} placeholder="prenom.nom@bymycar.fr"></div>`).join('')}</div></div>
     <div class="card"><div class="chead"><div><h3>Listes du parc</h3><div class="sub">Un nom par ligne.</div></div>${ed ? `<button class="btn" onclick="saveParams('${site}')">Enregistrer les listes</button>` : ''}</div>
     <div class="pad pg"><div><h4 class="eyebrow">Vendeurs du parc</h4>${ta('vendeurs', (p.vendeurs || []).filter(v => !BASE_VEND.includes(v)))}</div>${ENT_NONE.includes(site) ? '' : `<div><h4 class="eyebrow">Entités du parc</h4>${ta('entites', entList(site))}</div>`}<div><h4 class="eyebrow">Marques</h4>${ta('marques', marqList(site))}</div><div><h4 class="eyebrow">Organismes de financement</h4>${ta('organismes', p.organismes)}</div><div><h4 class="eyebrow">Types de garantie</h4>${ta('garanties', p.garanties)}</div></div></div>`;
 }
@@ -1058,6 +1074,14 @@ async function saveObj(site) {
   if (error) { flash('Erreur : ' + error.message); return; }
   rows.forEach(r => S.obj[site + '|' + r.annee + '|' + r.mois] = r);
   flash('Objectifs enregistrés'); renderMain();
+}
+async function saveEmails(site) {
+  const emails = {}; document.querySelectorAll('.vmail').forEach(i => { const v = i.value.trim().toLowerCase(); if (v) emails[i.dataset.v] = v; });
+  const bad = Object.entries(emails).filter(([, v]) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v));
+  if (bad.length) { flash('Adresse invalide : ' + bad.map(b => b[0]).join(', ')); return; }
+  const { error } = await S.sb.from('tc_params').update({emails}).eq('site', site);
+  if (error) { flash('Erreur : ' + error.message); return; }
+  S.params[site].emails = emails; flash('Emails enregistrés');
 }
 async function saveParams(site) {
   const L = k => !$('#p_' + k) ? [] : [...new Set($('#p_' + k).value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean))];
@@ -1248,9 +1272,19 @@ async function adminView() {
       <div class="f"><label>Parc</label><select id="is">${all.map(s => `<option value="${s.slug}">${esc(s.label)}</option>`).join('')}</select></div>
       <div class="f" style="margin-top:10px"><label>Année</label><input id="iy" type="number" value="${S.year}"></div>
       <div class="f" style="margin-top:10px"><label>Fichier</label><input id="if" type="file" accept=".xlsx,.xlsm,.xls"></div>
-      <div id="ip" class="note" style="margin-top:10px"></div></div></div></div></div>`;
+      <div id="ip" class="note" style="margin-top:10px"></div></div></div>
+    <div class="card"><div class="chead"><div><h3>Mail du vendredi 17 h</h3><div class="sub">Chaque vendeur reçoit ses VO facturés du mois en cours</div></div></div><div class="pad">
+      <div class="f"><label>Envoyer un test à</label><input id="mt" type="email" placeholder="ton.adresse@bymycar.fr"></div>
+      <div class="row2"><button class="btn" onclick="mailTest()">Envoyer le test maintenant</button></div><div id="mr" class="note" style="margin-top:8px"></div></div></div></div></div>`;
   $('#nf').onsubmit = createAcc;
   $('#if').onchange = previewImport;
+}
+async function mailTest() {
+  const to = $('#mt').value.trim(); if (!to) { $('#mr').textContent = 'Indiquez une adresse.'; return; }
+  $('#mr').textContent = 'Envoi en cours…';
+  try { const r = await api({action: 'mailtest', to});
+    $('#mr').innerHTML = `${r.sent.length} mail(s) envoyé(s) à ${esc(to)}${r.sent.length ? ' :<br>' + r.sent.map(esc).join('<br>') : ' — aucun vendeur n\'a d\'adresse renseignée.'}${r.skipped.length ? '<br><b style="color:var(--neg)">Erreurs :</b><br>' + r.skipped.map(esc).join('<br>') : ''}`;
+  } catch (e) { $('#mr').innerHTML = `<b style="color:var(--neg)">${esc(e.message)}</b>`; }
 }
 async function api(body) {
   const { data } = await S.sb.auth.getSession();
@@ -1378,14 +1412,14 @@ function exportTotal() {
   const per = sites.map(x => [siteObj(x).label, stats([x], y)]), tot = stats(sites, y);
   const r0 = v => Math.round(v * 100) / 100, ipv = (a, b) => b ? r0(a / b) : null;
   // 1. Synthèse annuelle
-  const syn = [['PARC', 'COMMANDES', 'OBJ. CDE', '% CDE', 'VO LIVRÉS', 'OBJ. LIV', 'FI', 'CA FI HT', 'OBJ. CA FI HT', 'IP FI', 'MARGE RÉELLE HT', 'OBJ. MARGE', '% MARGE', 'MARGE MOY./VO', 'FRAIS ADMIN', 'EURODATACAR', 'COYOTE', 'PROTECH', 'BULBEE', 'REPRISES', 'VENTES AM']];
-  const line = (lab, x) => [lab, x.cde[0], x.oc[0] || null, ipv(x.cde[0], x.oc[0]), x.liv[0], x.ol[0] || null, x.fi[0], Math.round(x.caf[0]), x.ocaf[0] || null, ipv(x.fi[0], x.liv[0]), Math.round(x.marge[0]), x.om[0] || null, ipv(x.marge[0], x.om[0]), x.liv[0] ? Math.round(x.marge[0] / x.liv[0]) : null, x.fa[0], x.edc[0], x.coy[0], x.pro[0], x.bul[0], x.rep[0], x.am[0]];
+  const syn = [['PARC', 'COMMANDES', 'OBJ. CDE', '% CDE', 'VO LIVRÉS', 'OBJ. LIV', 'CA HT', 'FI', 'CA FI HT', 'OBJ. CA FI HT', 'IP FI', 'MARGE RÉELLE HT', 'OBJ. MARGE', '% MARGE', 'MARGE MOY./VO', 'FRAIS ADMIN', 'EURODATACAR', 'COYOTE', 'PROTECH', 'BULBEE', 'REPRISES', 'VENTES AM']];
+  const line = (lab, x) => [lab, x.cde[0], x.oc[0] || null, ipv(x.cde[0], x.oc[0]), x.liv[0], x.ol[0] || null, Math.round(x.ca[0]), x.fi[0], Math.round(x.caf[0]), x.ocaf[0] || null, ipv(x.fi[0], x.liv[0]), Math.round(x.marge[0]), x.om[0] || null, ipv(x.marge[0], x.om[0]), x.liv[0] ? Math.round(x.marge[0] / x.liv[0]) : null, x.fa[0], x.edc[0], x.coy[0], x.pro[0], x.bul[0], x.rep[0], x.am[0]];
   per.forEach(([l, x]) => syn.push(line(l, x)));
   syn.push(line('TOTAL ' + selLabel().toUpperCase(), tot));
   const ws0 = XLSX.utils.aoa_to_sheet(syn); ws0['!cols'] = syn[0].map((h, i) => ({wch: i ? 13 : 30}));
   XLSX.utils.book_append_sheet(wb, ws0, 'SYNTHESE ' + y);
   // 2. Tableaux mensuels par parc
-  const M = [['COMMANDES', x => x.cde], ['LIVRES', x => x.liv], ['FI', x => x.fi], ['IP FI', x => x.liv.map((v, i) => ipv(x.fi[i], v))], ['MARGE', x => x.marge.map(Math.round)], ['CA FI HT', x => x.caf.map(Math.round)]];
+  const M = [['COMMANDES', x => x.cde], ['LIVRES', x => x.liv], ['CA HT', x => x.ca.map(Math.round)], ['FI', x => x.fi], ['IP FI', x => x.liv.map((v, i) => ipv(x.fi[i], v))], ['MARGE', x => x.marge.map(Math.round)], ['CA FI HT', x => x.caf.map(Math.round)]];
   M.forEach(([name, f]) => {
     const aoa = [['PARC', ...MOIS.map(m => m.toUpperCase()), name === 'IP FI' ? 'ANNÉE' : 'TOTAL']];
     per.forEach(([l, x]) => { const a = f(x); aoa.push([l, ...a.slice(1), a[0]]); });
